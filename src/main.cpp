@@ -2,20 +2,24 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
+#include "ImGuizmo.h"
 #include "Shader.h"
 #include "Model.h"
-#include "imgui_internal.h"
-#include "glm/gtc/type_ptr.hpp"
 #include <iostream>
 
-static void glfw_error_callback(int e,const char* d){ std::cerr<<"GLFW Error "<<e<<": "<<d<<std::endl; }
+static void glfw_error_callback(int error, const char* description) {
+    std::cerr << "GLFW Error " << error << ": " << description << std::endl;
+}
+
 int main() {
     // Setup GLFW
     glfwSetErrorCallback(glfw_error_callback);
-    if (!glfwInit()) return -1;
+    if (!glfwInit())
+        return -1;
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -23,7 +27,10 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
     GLFWwindow* window = glfwCreateWindow(1280, 720, "3D Slicer", nullptr, nullptr);
-    if (!window) { glfwTerminate(); return -1; }
+    if (!window) {
+        glfwTerminate();
+        return -1;
+    }
     glfwMakeContextCurrent(window);
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
@@ -61,28 +68,32 @@ int main() {
     glm::vec3 rotation(0.0f);
     float scale = 1.0f;
 
+    // ImGuizmo state
+    static ImGuizmo::OPERATION currentOp = ImGuizmo::TRANSLATE;
+    static ImGuizmo::MODE currentMode = ImGuizmo::WORLD;
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
+
+        // Start ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+        ImGuizmo::BeginFrame();
 
-        // Create main DockSpace window (no DockBuilder)
+        // Main DockSpace
         ImGuiViewport* viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(viewport->WorkPos);
         ImGui::SetNextWindowSize(viewport->WorkSize);
         ImGui::SetNextWindowViewport(viewport->ID);
-        ImGuiWindowFlags host_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse
-                                      | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDocking;
-        // Clear padding
+        ImGuiWindowFlags host_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove;
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
         ImGui::Begin("MainDockHost", nullptr, host_flags);
         ImGui::PopStyleVar(2);
-        // DockSpace id
         ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
         ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
-        ImGui::End(); // End MainDockHost window
+        ImGui::End();
 
         // Slicer panel
         ImGui::Begin("Slicer");
@@ -90,14 +101,12 @@ int main() {
         ImGui::SliderFloat("Scale", &scale, 0.1f, 5.0f);
         ImGui::End();
 
-        // Scene panel
-        // Remove padding for full-dock viewport
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0,0));
+        // Scene panel (no padding)
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::Begin("Scene");
         ImVec2 avail = ImGui::GetContentRegionAvail();
         int width = (int)avail.x;
         int height = (int)avail.y;
-        // Resize FBO if needed
         static int prevW = 0, prevH = 0;
         if (width != prevW || height != prevH) {
             prevW = width; prevH = height;
@@ -124,14 +133,12 @@ int main() {
         glBindTexture(GL_TEXTURE_2D, whiteTex);
         shader.setInt("texture_diffuse1", 0);
 
-        // Camera and projection
         float dist = model.radius * 2.5f;
         glm::mat4 view = glm::lookAt(glm::vec3(0, model.radius, dist), glm::vec3(0), glm::vec3(0, 1, 0));
         glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)width / height, 0.1f, dist * 3.0f);
         shader.setMat4("view", view);
         shader.setMat4("projection", proj);
 
-        // Model transform
         glm::mat4 M(1.0f);
         M = glm::translate(M, -model.center);
         M = glm::scale(M, glm::vec3(scale));
@@ -143,24 +150,52 @@ int main() {
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-        // Show rendered texture
-        ImGui::Image((ImTextureID)(intptr_t)colorTex, ImVec2(avail.x, avail.y), ImVec2(0,1), ImVec2(1,0));
+        // Draw the rendered texture
+        ImGui::Image((ImTextureID)(intptr_t)colorTex, ImVec2(avail.x, avail.y), ImVec2(0, 1), ImVec2(1, 0));
+
+        // ImGuizmo integration:
+        ImGuizmo::SetOrthographic(false);
+        ImGuizmo::SetDrawlist();
+        ImVec2 winPos = ImGui::GetWindowPos();
+        ImVec2 winSize = ImGui::GetWindowSize();
+        ImGuizmo::SetRect(winPos.x, winPos.y, winSize.x, winSize.y);
+
+        float viewMat[16], projMat[16], modelMat[16];
+        memcpy(viewMat, glm::value_ptr(view),  sizeof(viewMat));
+        memcpy(projMat, glm::value_ptr(proj),  sizeof(projMat));
+        memcpy(modelMat, glm::value_ptr(M),     sizeof(modelMat));
+
+        // Operation shortcuts
+        if (ImGui::IsKeyPressed(ImGuiKey_T, false)) currentOp = ImGuizmo::TRANSLATE;
+        if (ImGui::IsKeyPressed(ImGuiKey_R, false)) currentOp = ImGuizmo::ROTATE;
+        if (ImGui::IsKeyPressed(ImGuiKey_S, false)) currentOp = ImGuizmo::SCALE;
+
+        // Manipulate and apply
+        if (ImGuizmo::Manipulate(viewMat, projMat, currentOp, currentMode, modelMat, nullptr, nullptr)) {
+            float t[3], r[3], s[3];
+            ImGuizmo::DecomposeMatrixToComponents(modelMat, t, r, s);
+            rotation.x = r[0];
+            rotation.y = r[1];
+            rotation.z = r[2];
+            scale      = s[0];
+        }
+
         ImGui::PopStyleVar();
         ImGui::End();
 
         // Render ImGui
         ImGui::Render();
-        int dispW, dispH;
-        glfwGetFramebufferSize(window, &dispW, &dispH);
-        glViewport(0, 0, dispW, dispH);
+        int display_w, display_h;
+        glfwGetFramebufferSize(window, &display_w, &display_h);
+        glViewport(0, 0, display_w, display_h);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-            GLFWwindow* backup = glfwGetCurrentContext();
+            GLFWwindow* backup_current_context = glfwGetCurrentContext();
             ImGui::UpdatePlatformWindows();
             ImGui::RenderPlatformWindowsDefault();
-            glfwMakeContextCurrent(backup);
+            glfwMakeContextCurrent(backup_current_context);
         }
 
         glfwSwapBuffers(window);
@@ -173,5 +208,3 @@ int main() {
     glfwTerminate();
     return 0;
 }
-
-

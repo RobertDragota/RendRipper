@@ -12,6 +12,7 @@ set(GLFW_LIB_DIR ${CMAKE_SOURCE_DIR}/external/glfw/lib)
 set(GLM_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/external/glm)
 set(GLM_LIB_DIR ${CMAKE_SOURCE_DIR}/external/glm/lib)
 set(STB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/external/stb_lib)
+set(IM_GUIZMO_INCLUDE ${CMAKE_SOURCE_DIR}/external/imguizmo)
 
 
 find_package(assimp REQUIRED)
@@ -25,6 +26,16 @@ include_directories(${GLFW_INCLUDE_DIR})
 include_directories(${GLFW_LIB_DIR})
 include_directories(${GLM_INCLUDE_DIRS})
 include_directories(${STB_INCLUDE_DIR})
+include_directories(${IM_GUIZMO_INCLUDE})
+
+add_library(ImGuizmo
+        ${IM_GUIZMO_INCLUDE}/ImGuizmo.cpp
+        # ... any other ImGuizmo .cpp files if you want other widgets
+)
+target_include_directories(ImGuizmo
+        PUBLIC ${IM_GUIZMO_INCLUDE}
+)
+
 
 file(
         GLOB_RECURSE SRC_FILES
@@ -72,4 +83,5 @@ target_link_libraries(
         glm
         assimp::assimp
         OpenGL::GL
+        ImGuizmo
 )
