@@ -58,7 +58,6 @@ int main() {
     glEnable(GL_DEPTH_TEST);
 
     // State
-    float sliceHeight = 0.0f;
     glm::vec3 rotation(0.0f);
     float scale = 1.0f;
 
@@ -87,7 +86,6 @@ int main() {
 
         // Slicer panel
         ImGui::Begin("Slicer");
-        ImGui::SliderFloat("Slice Height", &sliceHeight, -model.radius, model.radius);
         ImGui::SliderFloat3("Rotation (°)", glm::value_ptr(rotation), -180.0f, 180.0f);
         ImGui::SliderFloat("Scale", &scale, 0.1f, 5.0f);
         ImGui::End();
@@ -141,7 +139,6 @@ int main() {
         M = glm::rotate(M, glm::radians(rotation.y), glm::vec3(0, 1, 0));
         M = glm::rotate(M, glm::radians(rotation.z), glm::vec3(0, 0, 1));
         shader.setMat4("model", M);
-        shader.setVec4("slicingPlane", glm::vec4(0, 1, 0, -sliceHeight));
         model.Draw(shader);
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
