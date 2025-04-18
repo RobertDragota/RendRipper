@@ -1,15 +1,13 @@
 #version 330 core
-in vec3 FragPos;
-in vec3 Normal;
-in vec2 TexCoords;
+in vec3 fPos;
+in vec3 fNorm;
+in vec2 fTex;
 out vec4 FragColor;
 uniform sampler2D texture_diffuse1;
 uniform vec4 slicingPlane;
-void main() {
-    if (dot(vec4(FragPos, 1.0), slicingPlane) > 0.0)
-    discard;
-    vec3 color = texture(texture_diffuse1, TexCoords).rgb;
-    vec3 lightDir = normalize(vec3(0.5, 1.0, 0.3));
-    float diff = max(dot(Normal, lightDir), 0.0);
-    FragColor = vec4(diff * color, 1.0);
+void main(){
+    if(dot(vec4(fPos,1),slicingPlane)>0) discard;
+    vec3 col=texture(texture_diffuse1,fTex).rgb;
+    float d=max(dot(normalize(fNorm),normalize(vec3(0.5,1,0.3))),0);
+    FragColor=vec4(d*col,1);
 }

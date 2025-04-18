@@ -1,16 +1,20 @@
 #pragma once
 #include <vector>
-#include <string>
+#include <glm/glm.hpp>
 #include "Mesh.h"
 #include <assimp/scene.h>
 
 class Model {
 public:
     Model(const std::string& path);
-    void Draw(Shader& shader);
+    void Draw(const Shader& shader) const;
+    glm::vec3 center; float radius;
 private:
     std::vector<Mesh> meshes;
-    void loadModel(const std::string& path);
-    void processNode(aiNode* node, const aiScene* scene);
-    Mesh processMesh(aiMesh* mesh, const aiScene* scene);
+    std::string dir;
+    void load(const std::string& path);
+    void procNode(aiNode*,const aiScene*);
+    Mesh procMesh(aiMesh*,const aiScene*);
+    std::vector<Texture> loadTex(aiMaterial*,aiTextureType,const std::string&);
+    void computeBounds();
 };
