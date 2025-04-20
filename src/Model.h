@@ -2,20 +2,36 @@
 #include <vector>
 #include <string>
 #include <glm/glm.hpp>
-#include "Mesh.h"
 #include <assimp/scene.h>
+#include "Mesh.h"
 
 class Model {
 public:
-    Model(const std::string& path);
+    explicit Model(const std::string& path);
+    ~Model();
+
+    // non‑copyable
+    Model(const Model&) = delete;
+    Model& operator=(const Model&) = delete;
+
+    // movable
+    Model(Model&&) noexcept;
+    Model& operator=(Model&&) noexcept;
+
     void Draw(const Shader& shader) const;
-    glm::vec3 center; float radius;
+
+    // bounding info
+    glm::vec3 center;
+    float radius;
+
 private:
+    std::string directory;
     std::vector<Mesh> meshes;
-    std::string dir;
-    void load(const std::string& path);
-    void procNode(aiNode*,const aiScene*);
-    Mesh procMesh(aiMesh*,const aiScene*);
-    std::vector<Texture> loadTex(aiMaterial*,aiTextureType,const std::string&);
+
+    void loadModel(const std::string& path);
+    void processNode(aiNode* node, const aiScene* scene);
+    Mesh processMesh(aiMesh* mesh, const aiScene* scene);
+    std::vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type,
+                                              const std::string& typeName);
     void computeBounds();
 };

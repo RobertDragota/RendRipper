@@ -65,13 +65,6 @@ add_executable(
         RendRipper
         "${SRC_FILES}"
         "${IMGUI_FILES}"
-        src/Model.cpp
-        src/Model.h
-        src/Shader.cpp
-        src/Shader.h
-        src/Mesh.cpp
-        src/Mesh.h
-        src/main.cpp
 
 )
 
