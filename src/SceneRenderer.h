@@ -13,7 +13,7 @@ public:
     ~SceneRenderer();
 
     void BeginImGuiScene();                         // ImGui::Begin + style
-    void Render(const Model& m, Shader& s, const Transform& t);
+    void Render(const Model& m, Shader& s, const Transform& t, glm::mat4 view);
     void EndImGuiScene();                           // ImGui::End + pop
 
     glm::mat4 GetViewMatrix() const;

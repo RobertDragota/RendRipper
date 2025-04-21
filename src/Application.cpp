@@ -13,7 +13,8 @@ static void glfw_error_callback(int e, const char* d) {
 }
 
 Application::Application(int w, int h, const char* title)
-        : width_(w), height_(h)
+        : width_(w), height_(h), cameraDistance_(5.0f), cameraPitch_(0.0f),
+          cameraYaw_(45.0f)
 {
     InitGLFW();
     InitWindow(title);
@@ -82,6 +83,18 @@ void Application::MainLoop() {
         ImGui::NewFrame();
         ImGuizmo::BeginFrame();
 
+
+        glm::vec3 offset;
+        offset.x = cameraDistance_ * cos(glm::radians(cameraPitch_)) * sin(glm::radians(cameraYaw_));
+        offset.y = cameraDistance_ * sin(glm::radians(cameraPitch_));
+        offset.z = cameraDistance_ * cos(glm::radians(cameraPitch_)) * cos(glm::radians(cameraYaw_));
+        glm::mat4 view = glm::lookAt(
+                model_->center + offset,
+                model_->center,
+                glm::vec3(-1,0,0)        // ← correct up
+        );
+
+
         // DockSpace UI
         ImGuiViewport* vp = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(vp->WorkPos);
@@ -89,7 +102,7 @@ void Application::MainLoop() {
         ImGui::SetNextWindowViewport(vp->ID);
         ImGuiWindowFlags wf = ImGuiWindowFlags_NoTitleBar
                               | ImGuiWindowFlags_NoMove;
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
         ImGui::Begin("DockHost", nullptr, wf);
         ImGui::PopStyleVar(2);
@@ -103,19 +116,31 @@ void Application::MainLoop() {
         ImGui::SliderFloat3("Translation",
                             glm::value_ptr(transform_.translation),
                             -5.0f, 5.0f);
-        ImGui::SliderFloat3("Rotation",
-                            glm::value_ptr(transform_.rotation),
-                            -180.0f, 180.0f);
-        ImGui::SliderFloat("Scale", &transform_.scale,
-                           0.1f, 5.0f);
+
+        // Euler slider (for display only)
+        glm::vec3 euler = transform_.getEulerAngles();
+        if (ImGui::SliderFloat3("Rotation", glm::value_ptr(euler), 0.0f, 360.0f)) {
+            transform_.setEulerAngles(euler);
+        }
+
+        ImGui::SliderFloat3("Scale", glm::value_ptr(transform_.scale), 0.1f, 5.0f);
+
+
+
+        if (ImGui::Button("Reset")) {
+            transform_.translation = glm::vec3(0.0f);
+            transform_.rotationQuat = glm::quat(1, 0, 0, 0);
+            transform_.scale = glm::vec3(1.0f);
+        }
         ImGui::End();
 
         // Scene + Gizmo in same window
         renderer_->BeginImGuiScene();
-        renderer_->Render(*model_, *shader_, transform_);
-        gizmo_.Manipulate(renderer_->GetViewMatrix(),
-                          renderer_->GetProjectionMatrix(),
-                          transform_);
+        renderer_->Render(*model_, *shader_, transform_, view);
+        gizmo_.Manipulate(
+                renderer_->GetViewMatrix(),
+                renderer_->GetProjectionMatrix(),
+                transform_);
         renderer_->EndImGuiScene();
 
         // Render ImGui

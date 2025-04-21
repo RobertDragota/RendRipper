@@ -31,4 +31,7 @@ private:
     std::unique_ptr<SceneRenderer> renderer_;   // creat după GLAD
     GizmoController                gizmo_;
     Transform                      transform_;
+    float cameraYaw_ ;
+    float cameraPitch_ ;
+    float cameraDistance_ ;
 };
