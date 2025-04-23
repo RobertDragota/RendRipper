@@ -6,6 +6,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <imgui.h>
 #include <ImGuizmo.h>
+#include <iostream>
 
 GizmoController::GizmoController()
         : currentOp_(ImGuizmo::TRANSLATE),
@@ -38,15 +39,18 @@ void GizmoController::Manipulate(const glm::mat4 &view,
     if (ImGuizmo::Manipulate(v, p, currentOp_, currentMode_, m, nullptr, nullptr)) {
         // read back
         glm::mat4 newM = glm::make_mat4(m);
-        // translation
+
+        float scale[3];
+        ImGuizmo::DecomposeScaleMatrixToComponents( m, scale);
         auto newTrans = glm::vec3(newM[3]);
         // basis columns
         auto c0 = glm::vec3(newM[0]);
         auto c1 = glm::vec3(newM[1]);
         auto c2 = glm::vec3(newM[2]);
-        float sx = glm::length(c0);
-        float sy = glm::length(c1);
-        float sz = glm::length(c2);
+        float sx = scale[0];
+        float sy = scale[1];
+        float sz = scale[2];
+
         // normalized rotation matrix
         glm::mat3 rotM;
         rotM[0] = c0 / sx;
