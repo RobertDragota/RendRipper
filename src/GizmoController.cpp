@@ -1,12 +1,13 @@
 #include "GizmoController.h"
+
 #define GLM_ENABLE_EXPERIMENTAL
+
 #include <glm/gtx/quaternion.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <imgui.h>
 #include <ImGuizmo.h>
-#include <iostream>
 
 GizmoController::GizmoController()
         : currentOp_(ImGuizmo::TRANSLATE),
@@ -38,28 +39,36 @@ void GizmoController::Manipulate(const glm::mat4 &view,
 
     if (ImGuizmo::Manipulate(v, p, currentOp_, currentMode_, m, nullptr, nullptr)) {
         // read back
-        glm::mat4 newM = glm::make_mat4(m);
+        glm::mat4 transformMatrix = glm::make_mat4(m);
 
-        float scale[3];
-        ImGuizmo::DecomposeScaleMatrixToComponents( m, scale);
-        auto newTrans = glm::vec3(newM[3]);
-        // basis columns
-        auto c0 = glm::vec3(newM[0]);
-        auto c1 = glm::vec3(newM[1]);
-        auto c2 = glm::vec3(newM[2]);
-        float sx = scale[0];
-        float sy = scale[1];
-        float sz = scale[2];
+        ComputeScaleMatrix(transformMatrix);
+        ComputeRotationMatrix(transformMatrix);
+        ComputeTranslationMatrix(transformMatrix);
 
-        // normalized rotation matrix
-        glm::mat3 rotM;
-        rotM[0] = c0 / sx;
-        rotM[1] = c1 / sy;
-        rotM[2] = c2 / sz;
-        glm::quat newQuat = glm::quat_cast(rotM);
-
-        transform.translation  = newTrans;
-        transform.scale        = glm::vec3(sx, sy, sz);
-        transform.rotationQuat = newQuat;
+        transform.translation = translation_;
+        transform.scale = scale_;
+        transform.rotationQuat = glm::quat_cast(rotation_);
     }
+}
+
+void GizmoController::ComputeRotationMatrix(glm::mat4 &transformMatrix) {
+
+    auto pitch = glm::vec3(transformMatrix[0]) / scale_[0];
+    auto yaw = glm::vec3(transformMatrix[1]) / scale_[1];
+    auto roll = glm::vec3(transformMatrix[2]) / scale_[2];
+
+    rotation_[0] = pitch;
+    rotation_[1] = yaw;
+    rotation_[2] = roll;
+
+}
+
+void GizmoController::ComputeTranslationMatrix(glm::mat4 &transformMatrix) {
+    translation_ = glm::vec3(transformMatrix[3]);
+}
+
+void GizmoController::ComputeScaleMatrix(glm::mat4 &transformMatrix) {
+    scale_[0] = glm::length(glm::vec3(transformMatrix[0]));
+    scale_[1] = glm::length(glm::vec3(transformMatrix[1]));
+    scale_[2] = glm::length(glm::vec3(transformMatrix[2]));
 }

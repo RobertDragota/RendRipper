@@ -29,6 +29,15 @@ public:
                     Transform&       transform);
 
 private:
+
+    void ComputeRotationMatrix( glm::mat4 & transformMatrix);
+    void ComputeTranslationMatrix( glm::mat4 & transformMatrix);
+    void ComputeScaleMatrix( glm::mat4 & transformMatrix);
+
     ImGuizmo::OPERATION currentOp_;
     ImGuizmo::MODE      currentMode_;
+
+    glm::mat3 rotation_;
+    glm::vec3 translation_;
+    glm::vec3 scale_;
 };

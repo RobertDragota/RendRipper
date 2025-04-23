@@ -15,6 +15,9 @@ Model::Model(const std::string& path) {
 }
 
 Model::~Model() {
+
+    for (auto& m : meshes)
+        m.~Mesh(); // distrugem manual fiecare mesh
     // meshes vor elibera texturile și buffer‑ele în destructori
 }
 
