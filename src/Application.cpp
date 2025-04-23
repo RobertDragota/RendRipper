@@ -103,7 +103,7 @@ void Application::MainLoop() {
         ImGuiWindowFlags wf = ImGuiWindowFlags_NoTitleBar
                               | ImGuiWindowFlags_NoMove;
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.0f);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 5.0f);
         ImGui::Begin("DockHost", nullptr, wf);
         ImGui::PopStyleVar(2);
         ImGuiID dockID = ImGui::GetID("MyDock");

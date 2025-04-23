@@ -26,7 +26,7 @@ public:
     GizmoController();
     void Manipulate(const glm::mat4& view,
                     const glm::mat4& proj,
-                    Transform&       t);
+                    Transform&       transform);
 
 private:
     ImGuizmo::OPERATION currentOp_;
