@@ -24,13 +24,17 @@ private:
     void MainLoop();
     void Cleanup();
 
+
     GLFWwindow*                    window_    = nullptr;
     int                            width_     = 0, height_ = 0;
     std::unique_ptr<Shader>        shader_;
     std::unique_ptr<Model>         model_;
+    std::unique_ptr<Model>         modelB_;
     std::unique_ptr<SceneRenderer> renderer_;   // creat după GLAD
     GizmoController                gizmo_;
+    GizmoController                gizmoB_;
     Transform                      transform_;
+    Transform                      transformB_;
     float cameraYaw_ ;
     float cameraPitch_ ;
     float cameraDistance_ ;

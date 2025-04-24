@@ -19,8 +19,9 @@ void GizmoController::Manipulate(const glm::mat4 &view,
     ImGuizmo::SetOrthographic(false);
     ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
     ImVec2 windowPos = ImGui::GetWindowPos();
-    ImVec2 windowSize = ImGui::GetWindowSize();
-    ImGuizmo::SetRect(windowPos.x, windowPos.y, windowSize.x, windowSize.y);
+    float windowWidth = ImGui::GetWindowWidth();
+    float windowHeight = ImGui::GetWindowHeight();
+    ImGuizmo::SetRect(windowPos.x, windowPos.y, windowWidth, windowHeight);
 
     // current model matrix
     glm::mat4 model = glm::translate(glm::mat4(1.0f), transform.translation)

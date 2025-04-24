@@ -37,7 +37,7 @@ private:
     ImGuizmo::OPERATION currentOp_;
     ImGuizmo::MODE      currentMode_;
 
-    glm::mat3 rotation_;
-    glm::vec3 translation_;
-    glm::vec3 scale_;
+    glm::mat3 rotation_{};
+    glm::vec3 translation_{};
+    glm::vec3 scale_{};
 };

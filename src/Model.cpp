@@ -7,11 +7,13 @@
 #include <assimp/postprocess.h>
 #include <stdexcept>
 #include <algorithm>
+#include <iostream>
 
 Model::Model(const std::string& path) {
     directory = path.substr(0, path.find_last_of("/\\"));
     loadModel(path);
     computeBounds();
+
 }
 
 Model::~Model() {
@@ -87,7 +89,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
         textures.insert(textures.end(), specular.begin(), specular.end());
     }
 
-    return Mesh(std::move(vertices), std::move(indices), std::move(textures));
+    return {std::move(vertices), std::move(indices), std::move(textures)};
 }
 
 std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type,
