@@ -58,6 +58,7 @@ file(COPY resources DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 add_subdirectory(external/glfw)
 add_subdirectory(external/glm)
 add_subdirectory(external/glad)
+add_subdirectory(external/ImGuiFileDialog)
 
 
 # Create the executable and include ImGui source files
@@ -77,4 +78,5 @@ target_link_libraries(
         assimp::assimp
         OpenGL::GL
         ImGuizmo
+        ImGuiFileDialog
 )
