@@ -6,7 +6,7 @@
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
-#include <Windows.h>
+#include <windows.h>
 #include "ImGuizmo.h"
 #include "glm/gtc/type_ptr.hpp"
 #include "ImGuiFileDialog.h"
@@ -27,17 +27,17 @@ Application::Application(int w, int h, const char *title)
     InitWindow(title);
     InitGLAD();
 
-    shader_ = std::make_unique<Shader>(
-            "../resources/shaders/shader.vert",
-            "../resources/shaders/shader.frag");
-    model_ = std::make_unique<Model>(
-            "../resources/models/viking_room.obj");
-    modelB_ = nullptr;
+    plateShader_ = std::make_unique<Shader>(
+            "../resources/shaders/plate_shader.vert",
+            "../resources/shaders/plate_shader.frag");
+    plateModel_ = std::make_unique<Model>(
+            "../resources/models/printing_plate_uv.obj");
 
-    // initial offset for model B
-    transformB_.translation = glm::vec3(0.0f, -1.0f, 0.0f);
-    transformB_.rotationQuat = glm::quat(1, 0, 0, 0);
-    transformB_.scale = glm::vec3(1.0f);
+
+    plateTransform_ = std::make_unique<Transform>();
+    plateTransform_->translation = glm::vec3(0.0f, -1.0f, 0.0f);
+    plateTransform_->rotationQuat = glm::quat(1, 0, 0, 0);
+    plateTransform_->scale = glm::vec3(1.0f);
 
     InitImGui();
     renderer_ = std::make_unique<SceneRenderer>();
@@ -103,9 +103,203 @@ static bool RayIntersectSphere(
     return true;
 }
 
+void Application::cameraView(glm::mat4 &view, glm::vec3 &offset) const {
+
+
+    offset.x = cameraDistance_ * cos(glm::radians(cameraPitch_))
+               * sin(glm::radians(cameraYaw_));
+    offset.y = cameraDistance_ * sin(glm::radians(cameraPitch_));
+    offset.z = cameraDistance_ * cos(glm::radians(cameraPitch_))
+               * cos(glm::radians(cameraYaw_));
+
+    auto pivot = glm::vec3(0.0f);
+
+
+    view = glm::lookAt(
+            pivot + offset,
+            pivot,
+            glm::vec3(0, 1, 0)
+    );
+}
+
+void Application::showMenuBar() {
+    if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMenu("File")) {
+            if (ImGui::MenuItem("Open file"))
+                showWinDialog = true;
+            ImGui::EndMenu();
+        }
+        ImGui::EndMainMenuBar();
+    }
+}
+
+void Application::openFileDialog() {
+
+    OPENFILENAMEA ofn{};
+    char szFile[MAX_PATH] = {0};
+
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = glfwGetWin32Window(window_);
+    ofn.lpstrFile = szFile;
+    ofn.nMaxFile = sizeof(szFile);
+
+    ofn.lpstrFilter = "OBJ files\0*.obj;*.OBJ\0All files\0*.*\0";
+    ofn.nFilterIndex = 1;
+    ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
+
+    if (GetOpenFileNameA(&ofn)) {
+
+        std::string path = szFile;
+
+        std::unique_ptr<Transform> transform = std::make_unique<Transform>();
+        transform->translation = glm::vec3(0.0f, -1.0f, 0.0f);
+        transform->rotationQuat = glm::quat(1, 0, 0, 0);
+        transform->scale = glm::vec3(1.0f);
+
+        modelTransformations_.emplace_back(std::move(transform));
+
+
+        modelShaders_.emplace_back(
+                std::make_unique<Shader>(
+                        "../../resources/shaders/model_shader.vert",
+                        "../../resources/shaders/model_shader.frag"));
+
+
+        models_.emplace_back(std::make_unique<Model>(path));
+
+        std::cout << "Model loaded: " << path << std::endl;
+    }
+    showWinDialog = false;
+
+}
+
+void Application::openRenderScene() {
+
+    ImGuiViewport *vp = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(vp->WorkPos);
+    ImGui::SetNextWindowSize(vp->WorkSize);
+    ImGui::SetNextWindowViewport(vp->ID);
+    ImGuiWindowFlags wf = ImGuiWindowFlags_NoTitleBar
+                          | ImGuiWindowFlags_NoMove;
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 5.0f);
+    ImGui::Begin("DockHost", nullptr, wf);
+    ImGui::PopStyleVar(2);
+    ImGuiID dockID = ImGui::GetID("MyDock");
+    ImGui::DockSpace(dockID, ImVec2(0, 0),
+                     ImGuiDockNodeFlags_PassthruCentralNode);
+    ImGui::End();
+
+}
+
+void Application::openModelPropertiesDialog() {
+    ImGui::Begin("Slicer");
+
+    if (!modelTransformations_.empty() && activeModel_ < modelTransformations_.size()) {
+        ImGui::Text("Editing Model");
+        ImGui::SliderFloat3("Translation",
+                            glm::value_ptr(modelTransformations_[activeModel_]->translation), -5.0f, 5.0f);
+        glm::vec3 eA = modelTransformations_[activeModel_]->getEulerAngles();
+        if (ImGui::SliderFloat3("Rotation",
+                                glm::value_ptr(eA), 0.0f, 360.0f))
+            modelTransformations_[activeModel_]->setEulerAngles(eA);
+        ImGui::SliderFloat3("Scale",
+                            glm::value_ptr(modelTransformations_[activeModel_]->scale), 0.1f, 5.0f);
+        if (ImGui::Button("Reset")) {
+            modelTransformations_[activeModel_]->translation = glm::vec3(0.0f);
+            modelTransformations_[activeModel_]->rotationQuat = glm::quat(1, 0, 0, 0);
+            modelTransformations_[activeModel_]->scale = glm::vec3(1.0f);
+        }
+    }else{
+        ImGui::Text("Printing Plate");
+        ImGui::SliderFloat3("Translation",
+                            glm::value_ptr(plateTransform_->translation), -5.0f, 5.0f);
+        glm::vec3 eA = plateTransform_->getEulerAngles();
+        if (ImGui::SliderFloat3("Rotation",
+                                glm::value_ptr(eA), 0.0f, 360.0f))
+            plateTransform_->setEulerAngles(eA);
+        ImGui::SliderFloat3("Scale",
+                            glm::value_ptr(plateTransform_->scale), 0.1f, 5.0f);
+        if (ImGui::Button("Reset")) {
+            plateTransform_->translation = glm::vec3(0.0f);
+            plateTransform_->rotationQuat = glm::quat(1, 0, 0, 0);
+            plateTransform_->scale = glm::vec3(1.0f);
+        }
+    }
+    ImGui::End();
+}
+
+void Application::getActiveModel(glm::mat4 &view) {
+
+    float nearestT = std::numeric_limits<float>::infinity();
+    int pickedIndex = -1;
+
+    ImVec2 mp = ImGui::GetMousePos();
+    ImVec2 wp = ImGui::GetWindowPos();
+    ImVec2 pad = ImGui::GetStyle().WindowPadding;
+    float w = ImGui::GetContentRegionAvail().x;
+    float h = ImGui::GetContentRegionAvail().y;
+    ImVec2 cp{mp.x - (wp.x + pad.x), mp.y - (wp.y + pad.y)};
+
+    float ndcX = (2.0f * cp.x) / w - 1.0f;
+    float ndcY = 1.0f - (2.0f * cp.y) / h;
+
+    glm::vec4 rayClip{ndcX, ndcY, -1.0f, 1.0f};
+    glm::mat4 invProj = glm::inverse(renderer_->GetProjectionMatrix());
+    glm::vec4 rayEye = invProj * rayClip;
+    rayEye.z = -1.0f;
+    rayEye.w = 0.0f;
+
+    glm::mat4 invView = glm::inverse(view);
+    glm::vec3 rayDir = glm::normalize(glm::vec3(invView * rayEye));
+    glm::vec3 rayOrigin = glm::vec3(invView[3]);
+
+    for (size_t i = 0; i < models_.size(); ++i) {
+        float tHit = 0.0f;
+        glm::vec3 center = models_[i]->center + modelTransformations_[i]->translation;
+        float radius = models_[i]->radius * modelTransformations_[i]->scale.x;
+        if (RayIntersectSphere(rayOrigin, rayDir, center, radius, tHit)) {
+            if (tHit < nearestT) {
+                nearestT = tHit;
+                pickedIndex = int(i);
+            }
+        }
+    }
+
+    activeModel_ = pickedIndex;
+}
+
+void Application::renderModels(glm::mat4 &view) {
+
+
+    for (size_t i = 0; i < models_.size(); ++i) {
+
+        renderer_->RenderModel(*models_[i], *modelShaders_[i],
+                               *modelTransformations_[i]);
+
+
+    }
+    if (!modelTransformations_.empty() && activeModel_ != -1)
+        gizmo_.Manipulate(
+                renderer_->GetViewMatrix(),
+                renderer_->GetProjectionMatrix(),
+                *modelTransformations_[activeModel_]);
+
+}
+
+void Application::renderPrintPlate(glm::mat4 &view) {
+    renderer_->RenderModel(*plateModel_, *plateShader_,
+                           *plateTransform_);
+
+    if (activeModel_ == -1)
+        gizmo_.Manipulate(
+                renderer_->GetViewMatrix(),
+                renderer_->GetProjectionMatrix(),
+                *plateTransform_);
+
+}
 
 void Application::MainLoop() {
-    static int activeModel = 0;  // 0 = A, 1 = B
 
     while (!glfwWindowShouldClose(window_)) {
         glfwPollEvents();
@@ -114,182 +308,32 @@ void Application::MainLoop() {
         ImGui::NewFrame();
         ImGuizmo::BeginFrame();
 
-
-        // compute camera offset
+        glm::mat4 view;
         glm::vec3 offset;
-        offset.x = cameraDistance_ * cos(glm::radians(cameraPitch_))
-                   * sin(glm::radians(cameraYaw_));
-        offset.y = cameraDistance_ * sin(glm::radians(cameraPitch_));
-        offset.z = cameraDistance_ * cos(glm::radians(cameraPitch_))
-                   * cos(glm::radians(cameraYaw_));
 
-        // pivot follows the active model’s position
-        glm::mat4 view = glm::lookAt(
-                model_->center + offset,
-                model_->center,
-                glm::vec3(-1, 0, 0));
+        cameraView(view, offset);
 
+        showMenuBar();
 
-        if (ImGui::BeginMainMenuBar()) {
-            if (ImGui::BeginMenu("File")) {
-                if (ImGui::MenuItem("Open .obj…"))
-                    showWinDialog = true;
-                ImGui::EndMenu();
-            }
-            ImGui::EndMainMenuBar();
-        }
-
-// 2) When triggered, configure and invoke the Win32 dialog
         if (showWinDialog) {
-            OPENFILENAMEA ofn{};                               // see docs on OPENFILENAMEA :contentReference[oaicite:0]{index=0}
-            char szFile[MAX_PATH] = { 0 };
-
-            ofn.lStructSize   = sizeof(ofn);
-            ofn.hwndOwner     = glfwGetWin32Window(window_);
-            ofn.lpstrFile     = szFile;
-            ofn.nMaxFile      = sizeof(szFile);
-            // double-null-terminated pairs: "description\0pattern;pattern\0…\0\0"
-            ofn.lpstrFilter   = "OBJ files\0*.obj;*.OBJ\0All files\0*.*\0";        // filter syntax :contentReference[oaicite:1]{index=1}
-            ofn.nFilterIndex  = 1;
-            ofn.Flags         = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;            // only allow existing files
-
-            if (GetOpenFileNameA(&ofn)) {                                           // opens modal dialog; returns nonzero on “Open” :contentReference[oaicite:2]{index=2}
-                // User picked a file and hit OK:
-                std::string path = szFile;
-                modelB_     = std::make_unique<Model>(path);
-                transform_ = Transform{};
-            }
-            showWinDialog = false;
+            openFileDialog();
         }
 
-        if (ImGuiFileDialog::Instance()->Display("ChooseOBJ")) {
-            if (ImGuiFileDialog::Instance()->IsOk()) {
-                std::string path = ImGuiFileDialog::Instance()->GetFilePathName();
-                modelB_ = std::make_unique<Model>(path);
-                transform_ = Transform{};
-            }
-            ImGuiFileDialog::Instance()->Close();
-        }
 
-        // DockSpace UI (unchanged)…
-        ImGuiViewport *vp = ImGui::GetMainViewport();
-        ImGui::SetNextWindowPos(vp->WorkPos);
-        ImGui::SetNextWindowSize(vp->WorkSize);
-        ImGui::SetNextWindowViewport(vp->ID);
-        ImGuiWindowFlags wf = ImGuiWindowFlags_NoTitleBar
-                              | ImGuiWindowFlags_NoMove;
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 5.0f);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 5.0f);
-        ImGui::Begin("DockHost", nullptr, wf);
-        ImGui::PopStyleVar(2);
-        ImGuiID dockID = ImGui::GetID("MyDock");
-        ImGui::DockSpace(dockID, ImVec2(0, 0),
-                         ImGuiDockNodeFlags_PassthruCentralNode);
-        ImGui::End();
+        openRenderScene();
 
-        // Control Panel: only the active model’s sliders
-        ImGui::Begin("Slicer");
+        openModelPropertiesDialog();
 
-        // add ImGui buttons to switch between models
-        ImGui::RadioButton("Model A", &activeModel, 0);
-        ImGui::RadioButton("Model B", &activeModel, 1);
-
-        if (activeModel == 0) {
-            ImGui::Text("Editing Model A");
-            ImGui::SliderFloat3("Translation A",
-                                glm::value_ptr(transform_.translation), -5.0f, 5.0f);
-            glm::vec3 eA = transform_.getEulerAngles();
-            if (ImGui::SliderFloat3("Rotation A",
-                                    glm::value_ptr(eA), 0.0f, 360.0f))
-                transform_.setEulerAngles(eA);
-            ImGui::SliderFloat3("Scale A",
-                                glm::value_ptr(transform_.scale), 0.1f, 5.0f);
-            if (ImGui::Button("Reset A")) {
-                transform_.translation = glm::vec3(0.0f);
-                transform_.rotationQuat = glm::quat(1, 0, 0, 0);
-                transform_.scale = glm::vec3(1.0f);
-            }
-        } else {
-            ImGui::Text("Editing Model B");
-            ImGui::SliderFloat3("Translation B",
-                                glm::value_ptr(transformB_.translation), -5.0f, 5.0f);
-            glm::vec3 eB = transformB_.getEulerAngles();
-            if (ImGui::SliderFloat3("Rotation B",
-                                    glm::value_ptr(eB), 0.0f, 360.0f))
-                transformB_.setEulerAngles(eB);
-            ImGui::SliderFloat3("Scale B",
-                                glm::value_ptr(transformB_.scale), 0.1f, 5.0f);
-            if (ImGui::Button("Reset B")) {
-                transformB_.translation = glm::vec3(0.0f);
-                transformB_.rotationQuat = glm::quat(1, 0, 0, 0);
-                transformB_.scale = glm::vec3(1.0f);
-            }
-        }
-        ImGui::End();
-
-        // **multi-model draw into FBO**
         renderer_->BeginScene(view);
 
-
-
-        // ** click‐picking logic **
         if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(0)) {
-            // 1) mouse pos relative to Scene content
-            ImVec2 mp = ImGui::GetMousePos();
-            ImVec2 wp = ImGui::GetWindowPos();
-            ImVec2 pad = ImGui::GetStyle().WindowPadding;
-            float w = ImGui::GetContentRegionAvail().x;
-            float h = ImGui::GetContentRegionAvail().y;
-            ImVec2 cp{mp.x - (wp.x + pad.x), mp.y - (wp.y + pad.y)};
-
-            // 2) normalized device coords
-            float ndcX = (2.0f * cp.x) / w - 1.0f;
-            float ndcY = 1.0f - (2.0f * cp.y) / h;
-
-            // 3) unproject into world‐space ray
-            glm::vec4 rayClip{ndcX, ndcY, -1.0f, 1.0f};
-            glm::vec4 rayEye = glm::inverse(renderer_->GetProjectionMatrix()) * rayClip;
-            rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0f, 0.0f);
-            glm::vec3 rayDir = glm::normalize(
-                    glm::vec3(glm::inverse(view) * rayEye)
-            );
-
-            // 4) sphere tests against each model
-            float tA, tB;
-            bool hitA = RayIntersectSphere(
-                    model_->center + offset, rayDir,
-                    model_->center + transform_.translation,
-                    model_->radius * transform_.scale.x,
-                    tA
-            );
-            bool hitB = !modelB_ ? false : RayIntersectSphere(
-                    model_->center + offset, rayDir,
-                    modelB_->center + transformB_.translation,
-                    modelB_->radius * transformB_.scale.x,
-                    tB
-            );
-
-            // choose the nearest hit
-            if (hitA && (!hitB || tA < tB)) activeModel = 0;
-            else if (hitB) activeModel = 1;
+            getActiveModel(view);
         }
 
+        renderPrintPlate(view);
 
-        renderer_->RenderModel(*model_, *shader_, transform_);
-        if(modelB_)
-        renderer_->RenderModel(*modelB_, *shader_, transformB_);
-        // single gizmo on the active one:
-        if (activeModel == 0) {
-            gizmo_.Manipulate(
-                    renderer_->GetViewMatrix(),
-                    renderer_->GetProjectionMatrix(),
-                    transform_);
-        } else if(modelB_) {
-            gizmo_.Manipulate(
-                    renderer_->GetViewMatrix(),
-                    renderer_->GetProjectionMatrix(),
-                    transformB_);
-        }
+        renderModels(view);
+
         renderer_->EndScene();
 
         // Render ImGui + swap

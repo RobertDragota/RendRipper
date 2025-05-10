@@ -27,20 +27,44 @@ private:
     void MainLoop();
     void Cleanup();
 
-
+    // window properties
     GLFWwindow*                    window_    = nullptr;
     int                            width_     = 0, height_ = 0;
-    std::unique_ptr<Shader>        shader_;
-    std::unique_ptr<Model>         model_;
-    std::unique_ptr<Model>         modelB_;
-    std::unique_ptr<SceneRenderer> renderer_;   // creat după GLAD
+
+    // models and shaders
+    std::vector<std::unique_ptr<Shader>>        modelShaders_;
+    std::vector<std::unique_ptr<Model>>         models_;
+    std::vector<std::unique_ptr<Transform>>     modelTransformations_;
+
+    std::unique_ptr<Shader>                   plateShader_;
+    std::unique_ptr<Model>                    plateModel_;
+    std::unique_ptr<Transform>                plateTransform_;
+
+    std::unique_ptr<SceneRenderer> renderer_;
+
     GizmoController                gizmo_;
-    GizmoController                gizmoB_;
-    Transform                      transform_;
-    Transform                      transformB_;
+
     float cameraYaw_ ;
     float cameraPitch_ ;
     float cameraDistance_ ;
 
+    int activeModel_ = -1;
+
     bool showWinDialog  = false;
+
+    void cameraView(glm::mat4 &view, glm::vec3 &offset) const;
+
+    void showMenuBar();
+
+    void openFileDialog();
+
+    void openRenderScene();
+
+    void openModelPropertiesDialog();
+
+    void getActiveModel( glm::mat4 &view);
+
+    void renderModels(glm::mat4 &view);
+
+    void renderPrintPlate(glm::mat4 &view);
 };
