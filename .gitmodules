@@ -19,5 +19,5 @@
 	    url  = https://github.com/Dav1dde/glad.git
 
 	[submodule "external/Slic3r"]
-	    path = external/Slic3r
-	    url  = https://github.com/slic3r/Slic3r.git
+	path = external/Slic3r
+	url = https://github.com/slic3r/Slic3r.git
