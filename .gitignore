@@ -1,5 +1,6 @@
 .idea/
 cmake-build-debug-visual-studio/
 cmake-build-release-visual-studio/
-external/
-!external/Slic3r
+external/*
+!external/Slic3r/
+!external/Slic3r/**
