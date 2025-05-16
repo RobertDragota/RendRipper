@@ -39,9 +39,12 @@ public:
 
     void setVec4(const std::string &name, const glm::vec4 &vec) const;
 
+    void setVec3(const std::string &name, const glm::vec3 &value) const;
+
 private:
     unsigned int ID;
     mutable std::unordered_map<std::string, int> uniformLocationCache;
 
     int getUniformLocation(const std::string &name) const;
+
 };

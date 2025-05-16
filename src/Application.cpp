@@ -1,15 +1,19 @@
 // Application.cpp
+
 #include "Application.h"
 #include <iostream>
 #include <stdexcept>
-
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <windows.h>
+#include <numeric>
+#include <chrono>
 #include "ImGuizmo.h"
 #include "glm/gtc/type_ptr.hpp"
 #include "ImGuiFileDialog.h"
+
+#include "glm/gtx/quaternion.hpp"
 
 
 static void glfw_error_callback(int error, const char *desc) {
@@ -64,6 +68,38 @@ void Application::InitWindow(const char *title) {
     window_ = glfwCreateWindow(width_, height_, title, nullptr, nullptr);
     if (!window_)
         throw std::runtime_error("Failed to create GLFW window");
+    glfwSetWindowUserPointer(window_, this);
+
+
+    glfwSetCursorPosCallback(window_, [](GLFWwindow* w, double x, double y){
+        static double lastX = 0, lastY = 0;
+        static bool first = true;
+        if (glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_RIGHT) != GLFW_PRESS) {
+            first = true;
+            return;
+        }
+        if (first) {
+            lastX = x; lastY = y;
+            first = false;
+        }
+        double dx = x - lastX;
+        double dy = y - lastY;
+        lastX = x; lastY = y;
+
+        auto app = static_cast<Application*>(glfwGetWindowUserPointer(w));
+        app->cameraYaw_   += float(dx) * 0.2f;
+        app->cameraPitch_ += float(dy) * 0.2f;
+        app->cameraPitch_ = glm::clamp(app->cameraPitch_, -89.0f, 89.0f);
+    });
+
+// zoom with scroll
+    glfwSetScrollCallback(window_, [](GLFWwindow* w, double /*xoff*/, double yoff){
+        auto app = static_cast<Application*>(glfwGetWindowUserPointer(w));
+        app->cameraDistance_ -= float(yoff) * 0.5f;
+        app->cameraDistance_ = glm::clamp(app->cameraDistance_, 0.2f, 200.0f);
+    });
+
+
     glfwMakeContextCurrent(window_);
     glfwSetFramebufferSizeCallback(window_, framebuffer_size_callback);
 }
@@ -87,19 +123,45 @@ void Application::InitImGui() {
 
 
 static bool RayIntersectSphere(
-        const glm::vec3 &ori,        // ray origin
-        const glm::vec3 &dir,        // ray direction (normalized)
-        const glm::vec3 &center,     // sphere center
-        float radius,                // sphere radius
-        float &tOut                  // distance along ray
+        const glm::vec3 &orig,      // ray origin
+        const glm::vec3 &dir,       // ray direction (should be normalized)
+        const glm::vec3 &center,    // sphere center
+        float radius,               // sphere radius
+        float &tOut                 // [out] nearest intersection distance
 ) {
-    glm::vec3 L = center - ori;
-    float tca = glm::dot(L, dir);
-    if (tca < 0.0f) return false;
-    float d2 = glm::dot(L, L) - tca * tca;
-    if (d2 > radius * radius) return false;
-    float thc = std::sqrt(radius * radius - d2);
-    tOut = tca - thc;
+    // Translate ray origin into sphere space
+    glm::dvec3 O = glm::dvec3(orig) - glm::dvec3(center);
+    glm::dvec3 D = glm::dvec3(dir);
+
+    // Quadratic coefficients for ||O + t D||^2 = r^2
+    double a = glm::dot(D, D);
+    double b = 2.0 * glm::dot(D, O);
+    double c = glm::dot(O, O) - double(radius) * double(radius);
+
+    // Discriminant
+    double disc = b * b - 4.0 * a * c;
+    if (disc < 0.0) {
+        return false;  // no real roots: miss
+    }
+
+    // Compute roots robustly to avoid cancellation:
+    double sqrtDisc = std::sqrt(disc);
+    // q = −½ (b + sign(b)*√disc)
+    double q = -0.5 * (b + (b > 0.0 ? sqrtDisc : -sqrtDisc));
+    double t0 = q / a;
+    double t1 = c / q;
+
+    // Order roots t0 ≤ t1
+    if (t0 > t1) std::swap(t0, t1);
+
+    // If both intersections are behind the ray, no hit
+    if (t1 < 0.0) {
+        return false;
+    }
+
+    // Use nearest positive t
+    double t = (t0 < 0.0) ? t1 : t0;
+    tOut = static_cast<float>(t);
     return true;
 }
 
@@ -118,7 +180,7 @@ void Application::cameraView(glm::mat4 &view, glm::vec3 &offset) const {
     view = glm::lookAt(
             pivot + offset,
             pivot,
-            glm::vec3(0, 1, 0)
+            glm::vec3(-1, 0, 0)
     );
 }
 
@@ -134,43 +196,57 @@ void Application::showMenuBar() {
 }
 
 void Application::openFileDialog() {
-
     OPENFILENAMEA ofn{};
     char szFile[MAX_PATH] = {0};
 
-    ofn.lStructSize = sizeof(ofn);
-    ofn.hwndOwner = glfwGetWin32Window(window_);
-    ofn.lpstrFile = szFile;
-    ofn.nMaxFile = sizeof(szFile);
+    ofn.lStructSize   = sizeof(ofn);
+    ofn.hwndOwner     = glfwGetWin32Window(window_);
+    ofn.lpstrFile     = szFile;
+    ofn.nMaxFile      = sizeof(szFile);
+    ofn.lpstrFilter   = "OBJ files\0*.obj;*.OBJ\0All files\0*.*\0";
+    ofn.nFilterIndex  = 1;
+    ofn.Flags         = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
 
-    ofn.lpstrFilter = "OBJ files\0*.obj;*.OBJ\0All files\0*.*\0";
-    ofn.nFilterIndex = 1;
-    ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
-
-    if (GetOpenFileNameA(&ofn)) {
-
-        std::string path = szFile;
-
-        std::unique_ptr<Transform> transform = std::make_unique<Transform>();
-        transform->translation = glm::vec3(0.0f, -1.0f, 0.0f);
-        transform->rotationQuat = glm::quat(1, 0, 0, 0);
-        transform->scale = glm::vec3(1.0f);
-
-        modelTransformations_.emplace_back(std::move(transform));
-
-
-        modelShaders_.emplace_back(
-                std::make_unique<Shader>(
-                        "../../resources/shaders/model_shader.vert",
-                        "../../resources/shaders/model_shader.frag"));
-
-
-        models_.emplace_back(std::make_unique<Model>(path));
-
-        std::cout << "Model loaded: " << path << std::endl;
+    if (!GetOpenFileNameA(&ofn)) {
+        showWinDialog = false;
+        return;
     }
-    showWinDialog = false;
 
+    std::string path = szFile;
+
+    // 1) Load the model so we can ask it for up‐axis and gather verts
+    auto modelPtr = std::make_unique<Model>(path);
+    Axis ax = modelPtr->determineUpAxis();
+    modelPtr->computeBounds();
+    glm::vec3 origCenter = modelPtr->center;
+    glm::vec3 origMin    = modelPtr->minBounds;
+
+    // rotate Y-up → Z-up
+    auto transform = std::make_unique<Transform>();
+//    transform->rotationQuat = glm::angleAxis(
+//            glm::radians(-90.0f),
+//            glm::vec3(1.0f, 0.0f, 0.0f)
+//    );
+
+    // apply rotation to bounds
+    glm::vec3 centerRot = transform->rotationQuat * origCenter;
+    glm::vec3 minRot    = transform->rotationQuat * origMin;
+    float   minZ       = minRot.z;
+
+    // translate center → (0,0), bottom → Z=0
+    transform->translation = glm::vec3(
+            -centerRot.x,
+            -centerRot.y,
+            -minZ
+    );
+
+    modelTransformations_.push_back(std::move(transform));
+    modelShaders_.emplace_back(std::make_unique<Shader>(
+            "../../resources/shaders/model_shader.vert",
+            "../../resources/shaders/model_shader.frag"
+    ));
+    models_.emplace_back(std::move(modelPtr));
+    showWinDialog = false;
 }
 
 void Application::openRenderScene() {
@@ -209,21 +285,6 @@ void Application::openModelPropertiesDialog() {
             modelTransformations_[activeModel_]->translation = glm::vec3(0.0f);
             modelTransformations_[activeModel_]->rotationQuat = glm::quat(1, 0, 0, 0);
             modelTransformations_[activeModel_]->scale = glm::vec3(1.0f);
-        }
-    }else{
-        ImGui::Text("Printing Plate");
-        ImGui::SliderFloat3("Translation",
-                            glm::value_ptr(plateTransform_->translation), -5.0f, 5.0f);
-        glm::vec3 eA = plateTransform_->getEulerAngles();
-        if (ImGui::SliderFloat3("Rotation",
-                                glm::value_ptr(eA), 0.0f, 360.0f))
-            plateTransform_->setEulerAngles(eA);
-        ImGui::SliderFloat3("Scale",
-                            glm::value_ptr(plateTransform_->scale), 0.1f, 5.0f);
-        if (ImGui::Button("Reset")) {
-            plateTransform_->translation = glm::vec3(0.0f);
-            plateTransform_->rotationQuat = glm::quat(1, 0, 0, 0);
-            plateTransform_->scale = glm::vec3(1.0f);
         }
     }
     ImGui::End();
@@ -287,56 +348,47 @@ void Application::renderModels(glm::mat4 &view) {
 
 }
 
-void Application::renderPrintPlate(glm::mat4 &view) {
-    renderer_->RenderModel(*plateModel_, *plateShader_,
-                           *plateTransform_);
-
-    if (activeModel_ == -1)
-        gizmo_.Manipulate(
-                renderer_->GetViewMatrix(),
-                renderer_->GetProjectionMatrix(),
-                *plateTransform_);
-
-}
 
 void Application::MainLoop() {
-
     while (!glfwWindowShouldClose(window_)) {
+        // Poll for input and start new frame
         glfwPollEvents();
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         ImGuizmo::BeginFrame();
 
+        // Compute camera view matrix
         glm::mat4 view;
         glm::vec3 offset;
-
         cameraView(view, offset);
 
+        // Draw menus and dialogs
         showMenuBar();
-
         if (showWinDialog) {
             openFileDialog();
         }
-
-
         openRenderScene();
-
         openModelPropertiesDialog();
 
+        // Begin rendering into our offscreen framebuffer
         renderer_->BeginScene(view);
 
-        if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(0)) {
+        // *** Modified selection logic: ***
+        // Only pick a new model when clicking in the scene and NOT over the gizmo
+        if (ImGui::IsWindowHovered()
+            && ImGui::IsMouseClicked(0)
+            && !ImGuizmo::IsOver()) {
             getActiveModel(view);
         }
 
-        renderPrintPlate(view);
-
+        // Draw all models + active gizmo
         renderModels(view);
 
+        // Finish scene rendering
         renderer_->EndScene();
 
-        // Render ImGui + swap
+        // Render ImGui to screen
         ImGui::Render();
         int dw, dh;
         glfwGetFramebufferSize(window_, &dw, &dh);
@@ -344,7 +396,7 @@ void Application::MainLoop() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-            GLFWwindow *backup = glfwGetCurrentContext();
+            GLFWwindow* backup = glfwGetCurrentContext();
             ImGui::UpdatePlatformWindows();
             ImGui::RenderPlatformWindowsDefault();
             glfwMakeContextCurrent(backup);

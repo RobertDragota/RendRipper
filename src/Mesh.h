@@ -27,6 +27,8 @@ public:
 
     void Draw(const Shader& shader) const;
     const std::vector<Vertex>& getVertices() const noexcept { return vertices; }
+    const std::vector<unsigned>& getIndices()  const noexcept { return indices; }
+
 
 private:
     void setup();

@@ -6,6 +6,7 @@
 #include "GLFW/glfw3native.h"
 #include <memory>
 #include <string>
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include "SceneRenderer.h"
 #include "GizmoController.h"
@@ -66,5 +67,4 @@ private:
 
     void renderModels(glm::mat4 &view);
 
-    void renderPrintPlate(glm::mat4 &view);
 };

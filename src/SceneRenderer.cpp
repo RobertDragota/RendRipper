@@ -30,10 +30,10 @@ SceneRenderer::SceneRenderer() {
     // build X–Z grid lines from x,z = –10…10
     std::vector<glm::vec3> lines;
     for (int i = -10; i <= 10; ++i) {
-        lines.emplace_back(i, 0, -10);
-        lines.emplace_back(i, 0, 10);
-        lines.emplace_back(-10, 0, i);
-        lines.emplace_back(10, 0, i);
+        lines.emplace_back(i, -10, 0);
+        lines.emplace_back(i, 10, 0);
+        lines.emplace_back(-10, i, 0);
+        lines.emplace_back(10, i, 0);
     }
     glGenVertexArrays(1, &gridVAO_);
     glGenBuffers(1, &gridVBO_);
@@ -47,8 +47,45 @@ SceneRenderer::SceneRenderer() {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
                           sizeof(glm::vec3), nullptr);
     glBindVertexArray(0);
+    initVolumeBox();
 
+}
 
+void SceneRenderer::initVolumeBox() {
+    float hx = volumeHalfX_, hy = volumeHalfY_, hz = volumeHalfZ_;
+    // 8 corners
+    glm::vec3 B0(-hx, -hy, 0), B1(hx, -hy, 0), B2(hx, hy, 0), B3(-hx, hy, 0);
+    glm::vec3 T0(-hx, -hy, hz), T1(hx, -hy, hz), T2(hx, hy, hz), T3(-hx, hy, hz);
+
+    // Lines: bottom rectangle
+    std::vector<glm::vec3> lines = {
+            // bottom (Z=0)
+            B0, B1, B1, B2, B2, B3, B3, B0,
+            // top (Z=+hz)
+            T0, T1, T1, T2, T2, T3, T3, T0,
+            // pillars
+            B0, T0, B1, T1, B2, T2, B3, T3
+    };
+
+    glGenVertexArrays(1, &boxVAO_);
+    glGenBuffers(1, &boxVBO_);
+    glBindVertexArray(boxVAO_);
+    glBindBuffer(GL_ARRAY_BUFFER, boxVBO_);
+    glBufferData(GL_ARRAY_BUFFER, lines.size() * sizeof(glm::vec3), lines.data(), GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void *) 0);
+    glBindVertexArray(0);
+}
+
+void SceneRenderer::RenderVolumeBox() {
+    gridShader_->use();
+    gridShader_->setMat4("view", view_);
+    gridShader_->setMat4("projection", proj_);
+    gridShader_->setMat4("model", glm::mat4(1.0f));
+    glBindVertexArray(boxVAO_);
+    // 24 line‐segments => 48 vertices
+    glDrawArrays(GL_LINES, 0, 48);
+    glBindVertexArray(0);
 }
 
 SceneRenderer::~SceneRenderer() {
@@ -71,7 +108,7 @@ void SceneRenderer::BeginScene(const glm::mat4 &view) {
     view_ = view;
     proj_ = glm::perspective(glm::radians(45.0f),
                              float(w) / float(h),
-                             0.1f, 100.0f);
+                             0.1f, 300.0f);
 
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
     glViewport(0, 0, w, h);
@@ -135,11 +172,15 @@ void SceneRenderer::ResizeIfNeeded(int w, int h) {
 }
 
 void SceneRenderer::RenderGrid() {
+    // draw floor grid (as before)
     gridShader_->use();
     gridShader_->setMat4("view", view_);
     gridShader_->setMat4("projection", proj_);
     gridShader_->setMat4("model", glm::mat4(1.0f));
     glBindVertexArray(gridVAO_);
-    glDrawArrays(GL_LINES, 0, (10 - (-10) + 1) * 4);
+    glDrawArrays(GL_LINES, 0, static_cast<GLsizei>((volumeHalfX_ * 2 + 1) * 4));
     glBindVertexArray(0);
+
+    // draw the print‐volume box
+    RenderVolumeBox();
 }
