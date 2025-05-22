@@ -18,7 +18,7 @@ set(IM_GUIZMO_INCLUDE ${CMAKE_SOURCE_DIR}/external/imguizmo)
 
 
 find_package(assimp REQUIRED)
-
+find_package(OpenGL REQUIRED)
 
 # Include directories
 include_directories(
@@ -29,9 +29,6 @@ include_directories(
         ${GLM_INCLUDE_DIRS}
         ${STB_INCLUDE_DIR}
         ${IM_GUIZMO_INCLUDE}
-        ${OpenCV_INCLUDE_DIRS}
-        # OpenCV include directory
-        ${OpenCV_DIR}/include
 )
 
 # Link directories for GLFW, GLM and OpenCV libraries
@@ -72,8 +69,6 @@ add_subdirectory(external/ImGuiFileDialog)
 add_executable(RendRipper
         ${SRC_FILES}
         ${IMGUI_FILES}
-        src/Transform.cpp
-        src/Transform.h
 )
 
 # Link libraries to the executable
@@ -85,8 +80,6 @@ target_link_libraries(RendRipper PUBLIC
         OpenGL::GL
         ImGuizmo
         ImGuiFileDialog
-        ${OpenCV_LIBS}
-        comdlg32
 )
 
 
