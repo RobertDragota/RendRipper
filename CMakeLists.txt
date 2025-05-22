@@ -4,6 +4,7 @@ project(RendRipper)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Paths to source and external dependencies
 set(SRC src/)
 set(IM_GUI_INCLUDE ${CMAKE_SOURCE_DIR}/external/imgui)
 set(IM_GUI_BACKEND_INCLUDE ${CMAKE_SOURCE_DIR}/external/imgui/backends)
@@ -15,36 +16,42 @@ set(STB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/external/stb_lib)
 set(IM_GUIZMO_INCLUDE ${CMAKE_SOURCE_DIR}/external/imguizmo)
 
 
+
 find_package(assimp REQUIRED)
-find_package(OpenGL REQUIRED)
 
-# Include directories for external libraries
-include_directories(${Vulkan_INCLUDE_DIRS})
-include_directories(${IM_GUI_INCLUDE})
-include_directories(${IM_GUI_BACKEND_INCLUDE})
-include_directories(${GLFW_INCLUDE_DIR})
-include_directories(${GLFW_LIB_DIR})
-include_directories(${GLM_INCLUDE_DIRS})
-include_directories(${STB_INCLUDE_DIR})
-include_directories(${IM_GUIZMO_INCLUDE})
 
+# Include directories
+include_directories(
+        ${Vulkan_INCLUDE_DIRS}
+        ${IM_GUI_INCLUDE}
+        ${IM_GUI_BACKEND_INCLUDE}
+        ${GLFW_INCLUDE_DIR}
+        ${GLM_INCLUDE_DIRS}
+        ${STB_INCLUDE_DIR}
+        ${IM_GUIZMO_INCLUDE}
+        ${OpenCV_INCLUDE_DIRS}
+        # OpenCV include directory
+        ${OpenCV_DIR}/include
+)
+
+# Link directories for GLFW, GLM and OpenCV libraries
+link_directories(
+        ${GLFW_LIB_DIR}
+        ${GLM_LIB_DIR}
+)
+
+# ImGuizmo integration
 add_library(ImGuizmo
         ${IM_GUIZMO_INCLUDE}/ImGuizmo.cpp
-        # ... any other ImGuizmo .cpp files if you want other widgets
 )
-target_include_directories(ImGuizmo
-        PUBLIC ${IM_GUIZMO_INCLUDE}
-)
+target_include_directories(ImGuizmo PUBLIC ${IM_GUIZMO_INCLUDE})
 
-
-file(
-        GLOB_RECURSE SRC_FILES
+# Gather project sources
+file(GLOB_RECURSE SRC_FILES
         "${SRC}/*.cpp"
         "${SRC}/*.h"
 )
-
-file(
-        GLOB_RECURSE IMGUI_FILES
+file(GLOB_RECURSE IMGUI_FILES
         "${IM_GUI_INCLUDE}/imgui.cpp"
         "${IM_GUI_INCLUDE}/imgui_demo.cpp"
         "${IM_GUI_INCLUDE}/imgui_draw.cpp"
@@ -54,24 +61,23 @@ file(
         "${IM_GUI_BACKEND_INCLUDE}/imgui_impl_glfw.cpp"
 )
 file(COPY resources DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-# Add GLFW as a subdirectory
+
+# External libraries as submodules
 add_subdirectory(external/glfw)
 add_subdirectory(external/glm)
 add_subdirectory(external/glad)
 add_subdirectory(external/ImGuiFileDialog)
 
-
-# Create the executable and include ImGui source files
-add_executable(
-        RendRipper
-        "${SRC_FILES}"
-        "${IMGUI_FILES}"
-
+# Create executable
+add_executable(RendRipper
+        ${SRC_FILES}
+        ${IMGUI_FILES}
+        src/Transform.cpp
+        src/Transform.h
 )
 
-# Link libraries for Vulkan and GLFW
-target_link_libraries(
-        RendRipper PUBLIC
+# Link libraries to the executable
+target_link_libraries(RendRipper PUBLIC
         glfw
         glad
         glm
@@ -79,4 +85,17 @@ target_link_libraries(
         OpenGL::GL
         ImGuizmo
         ImGuiFileDialog
+        ${OpenCV_LIBS}
+        comdlg32
 )
+
+
+if (WIN32)
+    # wherever you installed OpenCV
+    set(OpenCV_BIN_DIR "D:/opencv/build/x64/vc16/bin")
+    add_custom_command(TARGET RendRipper POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${OpenCV_BIN_DIR}/opencv_world4110.dll"
+            $<TARGET_FILE_DIR:RendRipper>
+    )
+endif()
