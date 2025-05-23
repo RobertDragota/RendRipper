@@ -1,17 +1,29 @@
 #pragma once
 
 #include <glad/glad.h>
+#ifdef _WIN32
 #define GLFW_EXPOSE_NATIVE_WIN32
+#endif
 #include <GLFW/glfw3.h>
-#include "GLFW/glfw3native.h"
+#ifdef _WIN32
+#include <GLFW/glfw3native.h>
+#endif
+
 #include <memory>
 #include <string>
+#include <vector>
+
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
-#include "SceneRenderer.h"
+#include <imgui.h> // For ImVec2
 #include "GizmoController.h"
+#include "SceneRenderer.h"
 #include "Shader.h"
 #include "Model.h"
+#include "Transform.h"
+
+// Ensure Axis enum is accessible, e.g., by including Model.h or defining it here/elsewhere
+// enum class Axis { X_UP, Y_UP, Z_UP, UNKNOWN }; // Example
 
 
 class Application {
@@ -28,43 +40,37 @@ private:
     void MainLoop();
     void Cleanup();
 
-    // window properties
     GLFWwindow*                    window_    = nullptr;
-    int                            width_     = 0, height_ = 0;
+    int                            width_     = 1280;
+    int                            height_    = 720;
 
-    // models and shaders
     std::vector<std::unique_ptr<Shader>>        modelShaders_;
     std::vector<std::unique_ptr<Model>>         models_;
     std::vector<std::unique_ptr<Transform>>     modelTransformations_;
 
-    std::unique_ptr<Shader>                   plateShader_;
-    std::unique_ptr<Model>                    plateModel_;
-    std::unique_ptr<Transform>                plateTransform_;
-
     std::unique_ptr<SceneRenderer> renderer_;
-
     GizmoController                gizmo_;
 
-    float cameraYaw_ ;
-    float cameraPitch_ ;
-    float cameraDistance_ ;
+    float cameraYaw_        = 45.0f;
+    float cameraPitch_      = 30.0f;
+    float cameraDistance_   = 20.0f;
 
     int activeModel_ = -1;
-
     bool showWinDialog  = false;
 
-    void cameraView(glm::mat4 &view, glm::vec3 &offset) const;
+    // Camera: Z-up orbital
+    void cameraView(glm::mat4 &view, glm::vec3 &cameraWorldPosition) const;
 
+    // UI
     void showMenuBar();
-
     void openFileDialog();
-
-    void openRenderScene();
-
+    void openRenderScene(); // Dockspace setup
     void openModelPropertiesDialog();
 
-    void getActiveModel( glm::mat4 &view);
+    // Interaction
+    void getActiveModel(glm::mat4 &viewMatrix, const ImVec2& viewportScreenPos, const ImVec2& viewportSize);
+    void renderModels(glm::mat4 &viewMatrix); // Renders models to the current rendertarget (FBO)
+    void UnloadModel(int modelIndex);
 
-    void renderModels(glm::mat4 &view);
-
+    void EnforceGridConstraint(int modelIndex);
 };

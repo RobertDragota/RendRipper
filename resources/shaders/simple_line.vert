@@ -1,5 +1,5 @@
 #version 330 core
-layout (location = 0) in vec3 aPos; // From your GL_LINES VBO
+layout (location = 0) in vec3 aPos;
 
 uniform mat4 model;
 uniform mat4 view;

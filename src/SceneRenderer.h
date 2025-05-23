@@ -1,56 +1,62 @@
-// SceneRenderer.h
-#ifndef SCENERENDERER_H
-#define SCENERENDERER_H
+#pragma once
 
-#include "Model.h"
-#include "Shader.h"
-#include "GizmoController.h"
+#include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <memory>
-#include "glad/glad.h"
+#include <vector>
+
+class Shader;
+class Model;
+struct Transform;
 
 class SceneRenderer {
 public:
     SceneRenderer();
     ~SceneRenderer();
 
-    // Call once per frame before drawing any models
-    void BeginScene(const glm::mat4& view);
-
-    void RenderGrid();
-    // Draw each model instance
-    void RenderModel(const Model& model, Shader& shader, const Transform& t);
-    // After all models are drawn, display the rendered texture
+    void BeginScene(const glm::mat4& viewMatrix, const glm::vec3& cameraWorldPosition);
     void EndScene();
+    void RenderModel(const Model& model, Shader& shader, const Transform& transform);
+    void SetViewportSize(int width, int height);
 
-    [[nodiscard]] glm::mat4 GetViewMatrix()    const { return view_; }
-    [[nodiscard]] glm::mat4 GetProjectionMatrix() const { return proj_; }
-
-    float getVolumeHalfX() const { return volumeHalfX_; }
-    float getVolumeHalfY() const { return volumeHalfY_; }
-    float getVolumeHalfZ() const { return volumeHalfZ_; }
+    GLuint GetSceneTexture() const { return colorTex_; }
+    const glm::mat4& GetViewMatrix() const { return viewMatrix_; }
+    const glm::mat4& GetProjectionMatrix() const { return projectionMatrix_; }
+    void SetGridColor(const glm::vec3& color) { gridColor_ = color; }
 
 private:
-    void ResizeIfNeeded(int w, int h);
+    void InitializeDefaultTexture();
+    void InitializeFBO();
+    void InitializeGrid(); // For shader-based infinite grid quad
+    void InitializeVolumeBox(); // For line-based volume box
+    void ResizeFBOIfNeeded(int width, int height);
+    void RenderGridAndVolume();
 
-    glm::vec3 lightDirection_{  0.5f, -1.0f, 0.3f };
+    GLuint fbo_ = 0;
+    GLuint colorTex_ = 0;
+    GLuint rboDepthStencil_ = 0;
+    GLuint defaultWhiteTex_ = 0;
 
-    unsigned int gridVAO_{0}, gridVBO_{0};
-    std::unique_ptr<Shader> gridShader_;
+    // For shader-based infinite grid
+    GLuint gridVAO_ = 0, gridVBO_ = 0, gridEBO_ = 0;
+    std::unique_ptr<Shader> gridShader_; // Uses infinite_grid.vert/frag
+
+    // For line-based volume box
+    GLuint volumeBoxVAO_ = 0, volumeBoxVBO_ = 0;
+    std::unique_ptr<Shader> volumeBoxShader_; // Uses simple_line.vert/frag
+
+    glm::vec3 gridColor_ = glm::vec3(0.4f, 0.4f, 0.45f); // Color for volume box lines
+    // Infinite grid shader has its own colors
+
+    int viewportWidth_ = 1;
+    int viewportHeight_ = 1;
+
+    glm::mat4 viewMatrix_;
+    glm::mat4 projectionMatrix_;
+
+    glm::vec3 lightDirection_ = glm::normalize(glm::vec3(0.5f, 0.5f, 1.0f));
 
     float volumeHalfX_ = 10.0f;
-    float volumeHalfY_ = 10.0f;  // height
-    float volumeHalfZ_ = 20.0f;
-
-    GLuint boxVAO_, boxVBO_;
-
-    unsigned int fbo_{0}, colorTex_{0}, rbo_{0}, whiteTex_{0};
-    int fbWidth_{0}, fbHeight_{0};
-    glm::mat4 view_{1.0f}, proj_{1.0f};
-
-    void initVolumeBox();
-
-    void RenderVolumeBox();
+    float volumeHalfY_ = 10.0f;
+    float volumeHeight_ = 15.0f;
 };
-
-#endif // SCENERENDERER_H

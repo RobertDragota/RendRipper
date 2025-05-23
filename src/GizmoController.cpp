@@ -73,3 +73,11 @@ void GizmoController::ComputeScaleMatrix(glm::mat4 &transformMatrix) {
     scale_[1] = glm::length(glm::vec3(transformMatrix[1]));
     scale_[2] = glm::length(glm::vec3(transformMatrix[2]));
 }
+
+ImGuizmo::OPERATION GizmoController::GetCurrentMode() {
+    return currentOp_;
+}
+
+void GizmoController::SetCurrentMode(ImGuizmo::OPERATION operation) {
+    currentOp_ = operation;
+}

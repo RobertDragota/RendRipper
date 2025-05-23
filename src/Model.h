@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 #include <assimp/scene.h>
 #include "Mesh.h"
-enum class Axis { X, Y, Z };
+enum class Axis { X_UP, Y_UP, Z_UP };
 class Model {
 public:
     explicit Model(const std::string& path);

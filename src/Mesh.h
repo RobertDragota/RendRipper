@@ -26,8 +26,8 @@ public:
     Mesh& operator=(Mesh&&) noexcept;
 
     void Draw(const Shader& shader) const;
-    const std::vector<Vertex>& getVertices() const noexcept { return vertices; }
-    const std::vector<unsigned>& getIndices()  const noexcept { return indices; }
+    [[nodiscard]] const std::vector<Vertex>& getVertices() const noexcept { return vertices; }
+    [[nodiscard]] const std::vector<unsigned>& getIndices()  const noexcept { return indices; }
 
 
 private:
