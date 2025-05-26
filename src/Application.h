@@ -16,6 +16,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <imgui.h> // For ImVec2
+#include <mutex>
 #include "GizmoController.h"
 #include "SceneRenderer.h"
 #include "Shader.h"
@@ -48,6 +49,16 @@ private:
     std::vector<std::unique_ptr<Model>>         models_;
     std::vector<std::unique_ptr<Transform>>     modelTransformations_;
 
+    std::mutex      pendingMutex_;
+    std::string     pendingModelPath_;
+    std::atomic<bool> pendingModelReady_{false};
+
+    std::atomic<bool>   generating_{false};
+    std::atomic<bool>   generationDone_{false};
+    std::string         generationMessage_;        // e.g. “Running Python…”
+    std::mutex          generationMessageMutex_;
+    std::atomic<float> progress_{0.0f};
+
     std::unique_ptr<SceneRenderer> renderer_;
     GizmoController                gizmo_;
 
@@ -63,9 +74,12 @@ private:
 
     // UI
     void showMenuBar();
-    void openFileDialog();
-    void openRenderScene(); // Dockspace setup
+    void openFileDialog( const std::function<void(std::string&)>& onFileSelected = nullptr );
+    void openRenderScene();
     void openModelPropertiesDialog();
+
+    void loadModel( std::string&  modelPath );
+    void loadImageFor3DModel(std::string&  imagePath);
 
     // Interaction
     void getActiveModel(glm::mat4 &viewMatrix, const ImVec2& viewportScreenPos, const ImVec2& viewportSize);
@@ -73,4 +87,7 @@ private:
     void UnloadModel(int modelIndex);
 
     void EnforceGridConstraint(int modelIndex);
+
+
+    void showGenerationModal();
 };

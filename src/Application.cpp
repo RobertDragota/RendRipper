@@ -12,7 +12,7 @@
 #include <ImGuizmo.h>
 
 #include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/quaternion.hpp>
+
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "SceneRenderer.h"
@@ -24,6 +24,9 @@
 #ifdef _WIN32
 
 #include <windows.h>
+#include <thread>
+#include <future>
+#include <regex>
 
 #endif
 
@@ -47,8 +50,8 @@ WorldMinMaxZ CalculateWorldMinMaxZ(const Model &model, const Transform &transfor
     };
     glm::mat4 modelMatrix = transform.getMatrix();
     WorldMinMaxZ result = {std::numeric_limits<float>::max(), std::numeric_limits<float>::lowest()};
-    for (int i = 0; i < 8; ++i) {
-        glm::vec3 worldCorner = glm::vec3(modelMatrix * glm::vec4(localCorners[i], 1.0f));
+    for (auto localCorner: localCorners) {
+        glm::vec3 worldCorner = glm::vec3(modelMatrix * glm::vec4(localCorner, 1.0f));
         result.minZ = glm::min(result.minZ, worldCorner.z);
         result.maxZ = glm::max(result.maxZ, worldCorner.z);
     }
@@ -148,11 +151,11 @@ void ApplyModernDarkStyle() {
     style.AntiAliasedFill = true;
 }
 
-static void glfw_error_callback(int error, const char *desc) { /* ... */ std::cerr << "GLFW Error " << error << ": "
-                                                                                   << desc << std::endl;
+static void glfw_error_callback(int error, const char *desc) {
+    std::cerr << "GLFW Error " << error << ": " << desc << std::endl;
 }
 
-static void framebuffer_size_callback(GLFWwindow * /*window*/, int w, int h) { /* ... */ glViewport(0, 0, w, h); }
+static void framebuffer_size_callback(GLFWwindow *, int w, int h) { glViewport(0, 0, w, h); }
 
 Application::Application(int w, int h, const char *title)
         : width_(w), height_(h), activeModel_(-1), showWinDialog(false) {
@@ -173,18 +176,15 @@ Application::~Application() { Cleanup(); }
 
 void Application::Run() { MainLoop(); }
 
-void Application::InitGLFW() { /* ... as before ... */
+void Application::InitGLFW() {
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit()) throw std::runtime_error("Failed to init GLFW");
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
 }
 
-void Application::InitWindow(const char *title) { /* ... as before ... */
+void Application::InitWindow(const char *title) {
     window_ = glfwCreateWindow(width_, height_, title, nullptr, nullptr);
     if (!window_) {
         glfwTerminate();
@@ -195,7 +195,7 @@ void Application::InitWindow(const char *title) { /* ... as before ... */
     glfwSwapInterval(1);
     glfwSetFramebufferSizeCallback(window_, framebuffer_size_callback);
     glfwSetCursorPosCallback(window_, [](GLFWwindow *w, double x, double y) {
-        Application *app = static_cast<Application *>(glfwGetWindowUserPointer(w));
+        auto *app = static_cast<Application *>(glfwGetWindowUserPointer(w));
         if (!app)return;
         static double lx = x, ly = y;
         static bool fm = true;
@@ -221,7 +221,7 @@ void Application::InitWindow(const char *title) { /* ... as before ... */
         } else fm = true;
     });
     glfwSetScrollCallback(window_, [](GLFWwindow *w, double, double yo) {
-        Application *app = static_cast<Application *>(glfwGetWindowUserPointer(w));
+        auto *app = static_cast<Application *>(glfwGetWindowUserPointer(w));
         if (!app || ImGui::GetIO().WantCaptureMouse)return;
         float zs = 0.8f;
         app->cameraDistance_ -= static_cast<float>(yo) * zs;
@@ -229,7 +229,7 @@ void Application::InitWindow(const char *title) { /* ... as before ... */
     });
 }
 
-void Application::InitGLAD() { /* ... as before ... */
+void Application::InitGLAD() {
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         if (window_)glfwDestroyWindow(window_);
         glfwTerminate();
@@ -238,12 +238,11 @@ void Application::InitGLAD() { /* ... as before ... */
     glEnable(GL_DEPTH_TEST);
 }
 
-void Application::InitImGui() { /* ... as before ... */
+void Application::InitImGui() {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
-    io.ConfigFlags |=
-            ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_ViewportsEnable;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_ViewportsEnable;
     ApplyModernDarkStyle();
     ImGuiStyle &s = ImGui::GetStyle();
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
@@ -257,7 +256,7 @@ void Application::InitImGui() { /* ... as before ... */
 }
 
 static bool RayIntersectSphere(const glm::vec3 &orig, const glm::vec3 &dir, const glm::vec3 center, float radius,
-                               float &tOut) { /* ... */
+                               float &tOut) {
     glm::dvec3 O = glm::dvec3(orig) - glm::dvec3(center);
     glm::dvec3 D = glm::dvec3(dir);
     double a = glm::dot(D, D), b = 2. * glm::dot(D, O), c = glm::dot(O, O) - (double) radius * radius;
@@ -281,11 +280,30 @@ void Application::cameraView(glm::mat4 &view, glm::vec3 &cameraWorldPosition) co
     view = glm::lookAt(cameraWorldPosition + piv, piv, up);
 }
 
-void Application::showMenuBar() { /* ... as before ... */
+void Application::showMenuBar() {
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
-            if (ImGui::MenuItem("Open OBJ Model...", "Ctrl+O"))showWinDialog = true;
-            if (ImGui::MenuItem("Exit"))glfwSetWindowShouldClose(window_, true);
+            if (ImGui::MenuItem("Open 3D Model...")) {
+                openFileDialog([this](std::string &selectedPath) {
+
+                    this->loadModel(selectedPath);
+                });
+
+            }
+            if (ImGui::MenuItem("Exit")) {
+                glfwSetWindowShouldClose(window_, true);
+            }
+
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Generate 3D Model")) {
+
+            if (ImGui::MenuItem("From Image…")) {
+                openFileDialog([this](std::string &selectedPath) {
+                    this->loadImageFor3DModel(selectedPath);
+                });
+            }
             ImGui::EndMenu();
         }
 
@@ -320,7 +338,7 @@ void Application::EnforceGridConstraint(int modelIndex) {
     }
 }
 
-void Application::openFileDialog() {
+void Application::openFileDialog(const std::function<void(std::string &)> &onFileSelected) {
 #ifdef _WIN32
     OPENFILENAMEA ofn{};
     char szFile[MAX_PATH] = {0};
@@ -332,50 +350,237 @@ void Application::openFileDialog() {
     ofn.nFilterIndex = 1;
     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
     if (GetOpenFileNameA(&ofn) == TRUE) {
-        std::string p = szFile;
-        try {
-            auto mPtr = std::make_unique<Model>(p);
-            mPtr->computeBounds();
-
-            glm::vec3 oC = mPtr->center, oMin = mPtr->minBounds, oMax = mPtr->maxBounds;
-            auto t = std::make_unique<Transform>();
-
-            glm::vec3 c[8];
-            c[0] = t->rotationQuat * glm::vec3(oMin.x, oMin.y, oMin.z);
-            c[1] = t->rotationQuat * glm::vec3(oMax.x, oMin.y, oMin.z);
-            c[2] = t->rotationQuat * glm::vec3(oMin.x, oMax.y, oMin.z);
-            c[3] = t->rotationQuat * glm::vec3(oMax.x, oMax.y, oMin.z);
-            c[4] = t->rotationQuat * glm::vec3(oMin.x, oMin.y, oMax.z);
-            c[5] = t->rotationQuat * glm::vec3(oMax.x, oMin.y, oMax.z);
-            c[6] = t->rotationQuat * glm::vec3(oMin.x, oMax.y, oMax.z);
-            c[7] = t->rotationQuat * glm::vec3(oMax.x, oMax.y, oMax.z);
-            glm::vec3 newMin = c[0];
-            for (int i = 1; i < 8; ++i)newMin = glm::min(newMin, c[i]);
-            glm::vec3 cRot = t->rotationQuat * oC;
-            t->translation = glm::vec3(-cRot.x, -cRot.y, -newMin.z);
-
-            modelTransformations_.push_back(std::move(t));
-            modelShaders_.emplace_back(std::make_unique<Shader>("../../resources/shaders/model_shader.vert",
-                                                                "../../resources/shaders/model_shader.frag"));
-            models_.emplace_back(std::move(mPtr));
-            activeModel_ = static_cast<int>(models_.size() - 1);
-            EnforceGridConstraint(activeModel_); // Enforce constraint after loading
-        } catch (const std::exception &e) { std::cerr << "Err load " << p << ": " << e.what() << std::endl; }
+        std::string filePath(szFile);
+        onFileSelected(filePath);
     }
 #else
     std::cerr<<"File dialog N/A\n";
 #endif
-    showWinDialog = false;
+
 }
 
-void Application::UnloadModel(int idx) {/*..as before..*/if (idx < 0 || idx >= models_.size())return;
+void Application::loadImageFor3DModel(std::string &imagePath) {
+
+    generating_.store(true, std::memory_order_release);
+    generationDone_.store(false, std::memory_order_release);
+    progress_.store(0.0f, std::memory_order_release);
+
+
+    const std::vector<std::string> stages = {
+            "Initializing model",
+            "Processing images",
+            "Running model",
+            "Extracting mesh",
+            "Exporting mesh"
+    };
+    const int numStages = static_cast<int>(stages.size());
+
+
+    std::thread([this, imagePath, stages, numStages]() {
+
+        {
+            std::lock_guard<std::mutex> lk(generationMessageMutex_);
+            generationMessage_ = "Launching TripoSR…";
+        }
+        progress_.store(0.0f, std::memory_order_release);
+
+
+        std::string cmd =
+                std::string(PYTHON_EXECUTABLE) +
+                " -u " +
+                std::string(GENERATE_MODEL_SCRIPT) +
+                " \"" + imagePath + "\"" +
+                " --chunk-size 8192" +
+                " --device cuda:0" +
+                " --mc-resolution 256" +
+                " --output-dir " +
+                std::string(OUTPUT_DIR) +
+                " 2>&1";
+
+
+#ifdef _WIN32
+        FILE *pipe = _popen(cmd.c_str(), "r");
+#else
+        FILE* pipe = popen(cmd.c_str(), "r");
+#endif
+        if (!pipe) {
+            std::lock_guard<std::mutex> lk(generationMessageMutex_);
+            generationMessage_ = "Failed to start TripoSR process.";
+            generationDone_.store(true, std::memory_order_release);
+            progress_.store(1.0f, std::memory_order_release);
+            return;
+        }
+
+        char buffer[512];
+        int currentStage = -1;
+
+        while (fgets(buffer, sizeof(buffer), pipe)) {
+            std::string line(buffer);
+            if (!line.empty() && line.back() == '\n')
+                line.pop_back();
+
+            {
+                std::lock_guard<std::mutex> lk(generationMessageMutex_);
+                generationMessage_ = line;
+            }
+
+            for (int i = 0; i < numStages; ++i) {
+                const auto &stage = stages[i];
+                if (line.find(stage + " ...") != std::string::npos) {
+
+                    float f = float(i) / float(numStages);
+                    progress_.store(f, std::memory_order_release);
+                    currentStage = i;
+                    break;
+                }
+                if (line.find(stage + " finished") != std::string::npos) {
+
+                    float f = float(i + 1) / float(numStages);
+                    progress_.store(f, std::memory_order_release);
+                    currentStage = i;
+                    break;
+                }
+            }
+        }
+
+
+#ifdef _WIN32
+        int ret = _pclose(pipe);
+#else
+        int ret = pclose(pipe);
+#endif
+
+        {
+            std::lock_guard<std::mutex> lk(generationMessageMutex_);
+            if (ret == 0) {
+                generationMessage_ = "Generation complete!";
+            } else {
+                generationMessage_ = "Generation failed (code " + std::to_string(ret) + ")";
+            }
+        }
+        progress_.store(1.0f, std::memory_order_release);
+        generationDone_.store(true, std::memory_order_release);
+
+    }).detach();
+}
+
+
+void Application::showGenerationModal() {
+    if (generating_.load()) {
+        ImGui::OpenPopup("Generating Model");
+        generating_.store(false);
+    }
+
+    ImGui::SetNextWindowSize(ImVec2(400, 350), ImGuiCond_Appearing);
+    ImGui::SetNextWindowPos(
+            ImGui::GetMainViewport()->GetCenter(),
+            ImGuiCond_Appearing, ImVec2(0.5f, 0.5f)
+    );
+
+    if (ImGui::BeginPopupModal("Generating Model", nullptr,
+                               ImGuiWindowFlags_AlwaysAutoResize)) {
+
+        {
+            const char *prompt = "Please wait ...";
+            float ww = ImGui::GetWindowWidth();
+            float tw = ImGui::CalcTextSize(prompt).x;
+            ImGui::SetCursorPosX((ww - tw) * 0.5f);
+            ImGui::Text("%s", prompt);
+        }
+
+        ImGui::Spacing();
+
+
+        {
+            float fraction = progress_.load();
+            const float radius = 120.0f;
+            const float thickness = 8.0f;
+            ImU32 fg = IM_COL32(75, 175, 255, 255);
+            ImU32 bg = IM_COL32(60, 60, 60, 128);
+
+            float ww = ImGui::GetWindowWidth();
+            ImGui::SetCursorPosX((ww - radius * 2.0f) * 0.5f);
+            ImGui::ProgressBar("##progress",
+                               fraction,
+                               radius,
+                               thickness,
+                               fg,
+                               bg);
+        }
+
+        ImGui::Spacing();
+
+
+        {
+            std::lock_guard<std::mutex> lk(generationMessageMutex_);
+            std::string msg = generationMessage_;
+            float ww = ImGui::GetWindowWidth();
+            float tw = ImGui::CalcTextSize(msg.c_str()).x;
+            ImGui::SetCursorPosX((ww - tw) * 0.5f);
+            ImGui::Text("%s", msg.c_str());
+        }
+
+
+        if (generationDone_.load()) {
+            ImGui::Spacing();
+            float ww = ImGui::GetWindowWidth();
+            float bw = 120.0f;
+            ImGui::SetCursorPosX((ww - bw) * 0.5f);
+            if (ImGui::Button("Close", ImVec2(bw, 0))) {
+                ImGui::CloseCurrentPopup();
+                std::string path = std::string(OUTPUT_DIR) + "/0/mesh.obj";
+                loadModel(path);
+                generationDone_.store(false);
+            }
+        }
+
+        ImGui::EndPopup();
+    }
+}
+
+
+void Application::loadModel(std::string &modelPath) {
+    try {
+        auto mPtr = std::make_unique<Model>(modelPath);
+        mPtr->computeBounds();
+
+        glm::vec3 oC = mPtr->center, oMin = mPtr->minBounds, oMax = mPtr->maxBounds;
+        auto t = std::make_unique<Transform>();
+
+        glm::vec3 c[8];
+        c[0] = t->rotationQuat * glm::vec3(oMin.x, oMin.y, oMin.z);
+        c[1] = t->rotationQuat * glm::vec3(oMax.x, oMin.y, oMin.z);
+        c[2] = t->rotationQuat * glm::vec3(oMin.x, oMax.y, oMin.z);
+        c[3] = t->rotationQuat * glm::vec3(oMax.x, oMax.y, oMin.z);
+        c[4] = t->rotationQuat * glm::vec3(oMin.x, oMin.y, oMax.z);
+        c[5] = t->rotationQuat * glm::vec3(oMax.x, oMin.y, oMax.z);
+        c[6] = t->rotationQuat * glm::vec3(oMin.x, oMax.y, oMax.z);
+        c[7] = t->rotationQuat * glm::vec3(oMax.x, oMax.y, oMax.z);
+        glm::vec3 newMin = c[0];
+        for (int i = 1; i < 8; ++i)newMin = glm::min(newMin, c[i]);
+        glm::vec3 cRot = t->rotationQuat * oC;
+        t->translation = glm::vec3(-cRot.x, -cRot.y, -newMin.z);
+
+        modelTransformations_.push_back(std::move(t));
+        modelShaders_.emplace_back(std::make_unique<Shader>("../../resources/shaders/model_shader.vert",
+                                                            "../../resources/shaders/model_shader.frag"));
+        models_.emplace_back(std::move(mPtr));
+        activeModel_ = static_cast<int>(models_.size() - 1);
+        EnforceGridConstraint(activeModel_);
+    } catch (const std::exception &e) { std::cerr << "Err load " << modelPath << ": " << e.what() << std::endl; }
+
+}
+
+void Application::UnloadModel(int idx) {
+    if (idx < 0 || idx >= models_.size())return;
     models_.erase(models_.begin() + idx);
     modelShaders_.erase(modelShaders_.begin() + idx);
     modelTransformations_.erase(modelTransformations_.begin() + idx);
     if (activeModel_ == idx)activeModel_ = -1; else if (activeModel_ > idx)activeModel_--;
 }
 
-void Application::openRenderScene() {/*..as before..*/ImGuiViewport *vp = ImGui::GetMainViewport();
+void Application::openRenderScene() {
+    ImGuiViewport *vp = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(vp->WorkPos);
     ImGui::SetNextWindowSize(vp->WorkSize);
     ImGui::SetNextWindowViewport(vp->ID);
@@ -410,7 +615,7 @@ void Application::openModelPropertiesDialog() {
 
         ImGui::Separator();
         if (ImGui::Button("Reset Transform")) {
-            // ... (Reset transform logic as before) ...
+
             glm::vec3 oC = models_[activeModel_]->center;
             glm::vec3 oMin = models_[activeModel_]->minBounds;
             glm::vec3 oMax = models_[activeModel_]->maxBounds;
@@ -430,7 +635,7 @@ void Application::openModelPropertiesDialog() {
             glm::vec3 centerRot = tf.rotationQuat * oC;
             tf.translation = glm::vec3(-centerRot.x, -centerRot.y, -newMin.z);
             tf.scale = glm::vec3(1.0f);
-            EnforceGridConstraint(activeModel_); // Enforce after reset
+            EnforceGridConstraint(activeModel_);
         }
         ImGui::SameLine();
         if (ImGui::Button("Unload Model")) UnloadModel(activeModel_);
@@ -439,7 +644,7 @@ void Application::openModelPropertiesDialog() {
 }
 
 void Application::getActiveModel(glm::mat4 &viewMatrix, const ImVec2 &viewportScreenPos,
-                                 const ImVec2 &viewportSize) { /* ... as before ... */
+                                 const ImVec2 &viewportSize) {
     float nearT = std::numeric_limits<float>::infinity();
     int pick = -1;
     ImVec2 mG = ImGui::GetMousePos();
@@ -467,7 +672,7 @@ void Application::getActiveModel(glm::mat4 &viewMatrix, const ImVec2 &viewportSc
     activeModel_ = pick;
 }
 
-void Application::renderModels(glm::mat4 &/*viewMatrixIgnored*/) { /* ... as before ... */
+void Application::renderModels(glm::mat4 &) {
     for (size_t i = 0; i < models_.size(); ++i) {
         if (models_[i] && modelShaders_[i] && modelTransformations_[i] && renderer_ && modelShaders_[i]->ID != 0) {
             renderer_->RenderModel(*models_[i], *modelShaders_[i], *modelTransformations_[i]);
@@ -486,8 +691,8 @@ void Application::MainLoop() {
         glm::vec3 camWorldPos;
         cameraView(viewMat, camWorldPos);
         showMenuBar();
-        if (showWinDialog) openFileDialog();
         openRenderScene();
+        showGenerationModal();
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::Begin("3D Viewport");
@@ -512,9 +717,7 @@ void Application::MainLoop() {
                 if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGuizmo::IsOver() && !ImGuizmo::IsUsing()) {
                     getActiveModel(viewMat, actualViewportTopLeft, viewportSize);
                 }
-                // Camera controls specific to when "3D Viewport" is hovered
-                // This replaces the global GLFW callbacks for mouse if you prefer viewport-specific control
-                // For RMB rotation:
+
                 if (ImGui::IsMouseDown(ImGuiMouseButton_Right) && !ImGuizmo::IsUsing()) {
                     ImVec2 delta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right, 0.0f);
                     float sensitivity = 0.2f;
@@ -523,7 +726,7 @@ void Application::MainLoop() {
                     cameraPitch_ = glm::clamp(cameraPitch_, -89.0f, 89.0f);
                     ImGui::ResetMouseDragDelta(ImGuiMouseButton_Right);
                 }
-                // For Mouse Wheel Zoom:
+
                 ImGuiIO &io = ImGui::GetIO();
                 if (io.MouseWheel != 0.0f && !ImGuizmo::IsUsing()) {
                     float zoomSpeed = 0.8f;
@@ -541,7 +744,7 @@ void Application::MainLoop() {
                         renderer_->GetProjectionMatrix(),
                         *modelTransformations_[activeModel_]
                 );
-                if (ImGuizmo::IsUsing()) { // Also check IsUsing for continuous drag
+                if (ImGuizmo::IsUsing()) {
                     EnforceGridConstraint(activeModel_);
                 }
             }
@@ -568,13 +771,23 @@ void Application::MainLoop() {
     }
 }
 
-void Application::Cleanup() { /* ... as before ... */
+void Application::Cleanup() {
+
     ImGui_ImplOpenGL3_Shutdown();
+
     ImGui_ImplGlfw_Shutdown();
+
     ImGui::DestroyContext();
+
     if (window_) {
         glfwDestroyWindow(window_);
         window_ = nullptr;
     }
+
     glfwTerminate();
+
 }
+
+
+
+

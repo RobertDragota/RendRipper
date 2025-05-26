@@ -1,0 +1,15 @@
+omegaconf==2.3.0
+Pillow==10.1.0
+einops==0.7.0
+git+https://github.com/tatsy/torchmcubes.git
+transformers==4.35.0
+trimesh==4.0.5
+rembg~=2.0.66
+huggingface-hub~=0.17.3
+imageio[ffmpeg]~=2.37.0
+gradio~=4.8.0
+xatlas==0.0.9
+moderngl==5.10.0
+
+torch~=2.7.0+cu118
+numpy~=1.26.4
