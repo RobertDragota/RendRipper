@@ -13,4 +13,10 @@ namespace IO_utility {
         return ss.str();
     }
 
+    void deleteFile(const char *path) {
+        if (std::remove(path) != 0) {
+            throw std::runtime_error(std::string("Cannot delete file: ") + path);
+        }
+    }
+
 }

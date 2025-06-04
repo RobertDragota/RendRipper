@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <numeric>
 #include <algorithm>
-#include <cmath> // For std::abs, fmod, cos, sin
+#include <cmath>
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
@@ -17,8 +17,8 @@
 
 #include "SceneRenderer.h"
 #include "Shader.h"
-#include "Model.h"      // Should define Model, Transform, Axis enum
-#include "Transform.h"  // If Transform is in its own file
+#include "Model.h"
+#include "Transform.h"
 #include "GizmoController.h"
 
 #ifdef _WIN32
@@ -30,13 +30,13 @@
 
 #endif
 
-// Helper struct for Z bounds
+
 struct WorldMinMaxZ {
     float minZ;
     float maxZ;
 };
 
-// Helper function to calculate world Z bounds
+
 WorldMinMaxZ CalculateWorldMinMaxZ(const Model &model, const Transform &transform) {
     glm::vec3 localCorners[8] = {
             {model.minBounds.x, model.minBounds.y, model.minBounds.z},
@@ -63,15 +63,15 @@ void ApplyModernDarkStyle() {
     ImGuiStyle &style = ImGui::GetStyle();
     ImVec4 *colors = style.Colors;
     ImVec4 bg_main_very_dark = ImVec4(0.09f, 0.09f, 0.09f, 1.00f);
-    ImVec4 bg_main = ImVec4(0.118f, 0.118f, 0.118f, 1.00f); // #1E1E1E
-    ImVec4 bg_secondary = ImVec4(0.145f, 0.145f, 0.149f, 1.00f); // #252526
-    ImVec4 bg_widget = ImVec4(0.200f, 0.200f, 0.200f, 1.00f); // #333333
-    ImVec4 text_main = ImVec4(0.86f, 0.86f, 0.86f, 1.00f);   // #DCDCDC
+    ImVec4 bg_main = ImVec4(0.118f, 0.118f, 0.118f, 1.00f);
+    ImVec4 bg_secondary = ImVec4(0.145f, 0.145f, 0.149f, 1.00f);
+    ImVec4 bg_widget = ImVec4(0.200f, 0.200f, 0.200f, 1.00f);
+    ImVec4 text_main = ImVec4(0.86f, 0.86f, 0.86f, 1.00f);
     ImVec4 text_disabled = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
-    ImVec4 accent_main = ImVec4(0.000f, 0.478f, 0.800f, 1.00f); // #007ACC
+    ImVec4 accent_main = ImVec4(0.000f, 0.478f, 0.800f, 1.00f);
     ImVec4 accent_hover = ImVec4(0.100f, 0.578f, 0.900f, 1.00f);
     ImVec4 accent_active = ImVec4(0.000f, 0.361f, 0.600f, 1.00f);
-    ImVec4 border_main = ImVec4(0.220f, 0.220f, 0.220f, 1.00f); // #383838
+    ImVec4 border_main = ImVec4(0.220f, 0.220f, 0.220f, 1.00f);
     ImVec4 border_light = ImVec4(0.27f, 0.27f, 0.27f, 1.00f);
     style.WindowPadding = ImVec2(8.0f, 8.0f);
     style.FramePadding = ImVec2(6.0f, 4.0f);
@@ -242,7 +242,8 @@ void Application::InitImGui() {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_ViewportsEnable;
+    io.ConfigFlags |=
+            ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_ViewportsEnable;
     ApplyModernDarkStyle();
     ImGuiStyle &s = ImGui::GetStyle();
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
@@ -299,7 +300,7 @@ void Application::showMenuBar() {
 
         if (ImGui::BeginMenu("Generate 3D Model")) {
 
-            if (ImGui::MenuItem("From Image…")) {
+            if (ImGui::MenuItem("From Image")) {
                 openFileDialog([this](std::string &selectedPath) {
                     this->loadImageFor3DModel(selectedPath);
                 });
@@ -346,7 +347,7 @@ void Application::openFileDialog(const std::function<void(std::string &)> &onFil
     ofn.hwndOwner = glfwGetWin32Window(window_);
     ofn.lpstrFile = szFile;
     ofn.nMaxFile = sizeof(szFile);
-    ofn.lpstrFilter = "OBJ Files\0*.obj;*.OBJ\0All Files\0*.*\0";
+    ofn.lpstrFilter = "OBJ Files\0*.obj;*.OBJ\0STL Files\0*.stl;*.STL\0All Files\0*.*\0";
     ofn.nFilterIndex = 1;
     ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
     if (GetOpenFileNameA(&ofn) == TRUE) {
@@ -380,7 +381,7 @@ void Application::loadImageFor3DModel(std::string &imagePath) {
 
         {
             std::lock_guard<std::mutex> lk(generationMessageMutex_);
-            generationMessage_ = "Launching TripoSR…";
+            generationMessage_ = "Launching TripoSR";
         }
         progress_.store(0.0f, std::memory_order_release);
 
@@ -464,6 +465,26 @@ void Application::loadImageFor3DModel(std::string &imagePath) {
     }).detach();
 }
 
+void Application::showErrorModal(std::string &message) {
+    if (showErrorModal_) {
+        ImGui::OpenPopup("Error");
+
+        ImGui::SetNextWindowSize(ImVec2(400, 150), ImGuiCond_Appearing);
+        ImGui::SetNextWindowPos(
+                ImGui::GetMainViewport()->GetCenter(),
+                ImGuiCond_Appearing, ImVec2(0.5f, 0.5f)
+        );
+    }
+
+
+    if (ImGui::BeginPopupModal("Error", &showErrorModal_, ImGuiWindowFlags_AlwaysAutoResize)) {
+
+        ImGui::Text("%s", errorModalMessage_.c_str());
+        ImGui::Spacing();
+
+        ImGui::EndPopup();
+    }
+}
 
 void Application::showGenerationModal() {
     if (generating_.load()) {
@@ -481,7 +502,7 @@ void Application::showGenerationModal() {
                                ImGuiWindowFlags_AlwaysAutoResize)) {
 
         {
-            const char *prompt = "Please wait ...";
+            const char *prompt = "Please wait";
             float ww = ImGui::GetWindowWidth();
             float tw = ImGui::CalcTextSize(prompt).x;
             ImGui::SetCursorPosX((ww - tw) * 0.5f);
@@ -567,7 +588,11 @@ void Application::loadModel(std::string &modelPath) {
         models_.emplace_back(std::move(mPtr));
         activeModel_ = static_cast<int>(models_.size() - 1);
         EnforceGridConstraint(activeModel_);
-    } catch (const std::exception &e) { std::cerr << "Err load " << modelPath << ": " << e.what() << std::endl; }
+    } catch (const std::exception &e) {
+        errorModalMessage_ = "Failed to load model: " + modelPath + "\n" + e.what();
+        std::cout << errorModalMessage_ << std::endl;
+        showErrorModal_ = true;
+    }
 
 }
 
@@ -693,11 +718,12 @@ void Application::MainLoop() {
         showMenuBar();
         openRenderScene();
         showGenerationModal();
+        showErrorModal(errorModalMessage_);
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::Begin("3D Viewport");
         {
-            ImVec2 viewportContentStart = ImGui::GetCursorScreenPos();
+            //ImVec2 viewportContentStart = ImGui::GetCursorScreenPos();
             ImVec2 viewportSize = ImGui::GetContentRegionAvail();
             if (viewportSize.x < 1.0f) viewportSize.x = 1.0f;
             if (viewportSize.y < 1.0f) viewportSize.y = 1.0f;

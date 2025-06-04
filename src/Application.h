@@ -23,8 +23,6 @@
 #include "Model.h"
 #include "Transform.h"
 
-// Ensure Axis enum is accessible, e.g., by including Model.h or defining it here/elsewhere
-// enum class Axis { X_UP, Y_UP, Z_UP, UNKNOWN }; // Example
 
 
 class Application {
@@ -69,6 +67,9 @@ private:
     int activeModel_ = -1;
     bool showWinDialog  = false;
 
+    bool showErrorModal_ = false;
+    std::string errorModalMessage_;
+
     // Camera: Z-up orbital
     void cameraView(glm::mat4 &view, glm::vec3 &cameraWorldPosition) const;
 
@@ -90,4 +91,6 @@ private:
 
 
     void showGenerationModal();
+
+    void showErrorModal(std::string &message);
 };

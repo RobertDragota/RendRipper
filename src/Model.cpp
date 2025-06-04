@@ -4,13 +4,18 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include <assimp/Importer.hpp>
+#include <assimp/Exporter.hpp>
 #include <assimp/postprocess.h>
 #include <stdexcept>
 #include <algorithm>
 #include <iostream>
 
-Model::Model(const std::string& path) {
+Model::Model( std::string& path) {
     directory = path.substr(0, path.find_last_of("/\\"));
+
+    std::cout<< "Loading model from: " << path << std::endl;
+    std::string outPath = directory + "/temp.stl";
+    ConvertObjToStl(path, outPath);
     loadModel(path);
     computeBounds();
 
@@ -41,6 +46,46 @@ Model& Model::operator=(Model&& o) noexcept {
 void Model::Draw(const Shader& shader) const {
     for (auto& m : meshes)
         m.Draw(shader);
+}
+
+
+void Model::ConvertObjToStl( std::string& inObjPath,std::string& outStlPath) {
+
+    if (inObjPath.empty() || outStlPath.empty()) {
+        throw std::invalid_argument("Input or output path is empty");
+    }
+    if (inObjPath == outStlPath) {
+        throw std::invalid_argument("Input and output paths must be different");
+    }
+    if (inObjPath.substr(inObjPath.find_last_of(".") + 1) != "obj") {
+        return;
+    }
+
+    Assimp::Importer importer;
+    const aiScene* scene = importer.ReadFile(inObjPath,
+                                             aiProcess_Triangulate
+                                             | aiProcess_GenSmoothNormals
+                                             | aiProcess_JoinIdenticalVertices
+                                             | aiProcess_SortByPType
+    );
+
+    if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
+        throw std::runtime_error(std::string("Assimp load error: ")
+                                 + importer.GetErrorString());
+    }
+
+
+    Assimp::Exporter exporter;
+    aiReturn exportRet = exporter.Export(scene,
+                                         "stl",
+                                         outStlPath,
+                                         0
+    );
+    if (exportRet != aiReturn_SUCCESS) {
+        throw std::runtime_error(std::string("Assimp export error: ")
+                                 + exporter.GetErrorString());
+    }
+    inObjPath = outStlPath;
 }
 
 void Model::loadModel(const std::string& path) {

@@ -7,7 +7,7 @@
 enum class Axis { X_UP, Y_UP, Z_UP };
 class Model {
 public:
-    explicit Model(const std::string& path);
+    explicit Model( std::string& path);
     ~Model();
 
 
@@ -43,4 +43,5 @@ private:
                                               const std::string& typeName);
 
 
+    void ConvertObjToStl(std::string &inObjPath, std::string &outStlPath);
 };
