@@ -3,6 +3,7 @@
 #include <glad/glad.h>
 #ifdef _WIN32
 #define GLFW_EXPOSE_NATIVE_WIN32
+
 #endif
 #include <GLFW/glfw3.h>
 #ifdef _WIN32
@@ -15,14 +16,14 @@
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
-#include <imgui.h> // For ImVec2
+#include <imgui.h>
 #include <mutex>
 #include "GizmoController.h"
 #include "SceneRenderer.h"
 #include "Shader.h"
 #include "Model.h"
 #include "Transform.h"
-
+#include "MeshRepairer.h"
 
 
 class Application {
@@ -34,14 +35,21 @@ public:
 private:
     void InitGLFW();
     void InitWindow(const char* title);
-    void InitGLAD();
-    void InitImGui();
+    void InitGLAD() const;
+    void InitImGui() const;
     void MainLoop();
+    bool PickFace(const glm::vec3 &rayOrigin,
+                           const glm::vec3 &rayDirection,
+                           glm::vec3 &outFaceNormal);
     void Cleanup();
 
     GLFWwindow*                    window_    = nullptr;
     int                            width_     = 1280;
     int                            height_    = 720;
+
+
+    std::shared_ptr<GCodeModel> gcodeModel_;
+    int currentGCodeLayer_ = -1;
 
     std::vector<std::unique_ptr<Shader>>        modelShaders_;
     std::vector<std::unique_ptr<Model>>         models_;
@@ -60,16 +68,21 @@ private:
     std::unique_ptr<SceneRenderer> renderer_;
     GizmoController                gizmo_;
 
-    float cameraYaw_        = 45.0f;
+    Transform                        bedCornerGizmoTransform_;
+
+    bool showWireframe_ = false;
+    bool useOrtho_      = false;
+
+    float cameraYaw_        = 0.0f;
     float cameraPitch_      = 30.0f;
-    float cameraDistance_   = 20.0f;
+    float cameraDistance_   = 500.0f;
 
     int activeModel_ = -1;
     bool showWinDialog  = false;
 
     bool showErrorModal_ = false;
     std::string errorModalMessage_;
-
+    std::vector<glm::vec3> loadedMeshDimensions_;
     // Camera: Z-up orbital
     void cameraView(glm::mat4 &view, glm::vec3 &cameraWorldPosition) const;
 

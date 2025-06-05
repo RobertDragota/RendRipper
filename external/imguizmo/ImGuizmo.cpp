@@ -3081,4 +3081,103 @@ namespace IMGUIZMO_NAMESPACE {
         // restore view/projection because it was used to compute ray
         ComputeContext(svgView.m16, svgProjection.m16, gContext.mModelSource.m16, gContext.mMode);
     }
-};
+
+
+
+// --------------------------------------------------------------------------------------
+// New Function: ViewAxes
+// Mirrors ViewManipulate(...) setup exactly, but draws 3 colored axes instead of cube faces.
+// ──────────────────────────────────────────────────────────────────────────────────────
+// Citation: the signature and context‐setup are copied from ImGuizmo’s own implementation
+// of ViewManipulate(...) (see lines ~2855 in ImGuizmo.cpp). :contentReference[oaicite:0]{index=0}
+// worldToPos(...) is used exactly as in the original code to project 3D → screen. :contentReference[oaicite:1]{index=1}
+// --------------------------------------------------------------------------------------
+void ViewAxes(float *view, float length, ImVec2 position, ImVec2 size, ImU32 backgroundColor)
+{
+    // 1) Preserve “isDragging” / “isClicking” state (identical to ViewManipulate)
+    static bool isDraging     = false;
+    static bool isClicking    = false;
+    static vec_t interpolationUp;
+    static vec_t interpolationDir;
+    static int interpolationFrames = 0;
+    const vec_t referenceUp = makeVect(0.f, 1.f, 0.f);
+
+    // 2) Copy current ImGuizmo context’s view/projection so we can restore later:
+    matrix_t svgView       = gContext.mViewMat;
+    matrix_t svgProjection = gContext.mProjectionMat;
+
+    // 3) Draw a background rectangle for the widget (identical to ViewManipulate)
+    ImGuiIO& io = ImGui::GetIO();
+    gContext.mDrawList->AddRectFilled(position, position + size, backgroundColor);
+
+    // 4) Invert the user‐passed “view” to locate the camera in world‐space
+    matrix_t viewInverse;
+    viewInverse.Inverse(*(matrix_t*)view);
+
+    // 5) Compute a “camTarget” so that the origin of our small axes is always at world‐(0,0,0)
+    const vec_t camTarget = viewInverse.v.position - viewInverse.v.dir * length;
+
+    // 6) Build a small “cube” frustum (distance=3) EXACTLY as ViewManipulate does
+    const float distance = 3.f;
+    matrix_t cubeProjection, cubeView;
+
+    // 6a) Compute a diagonal FOV so a unit cube fits perfectly at ‘distance’
+    float fov = acosf(distance / sqrtf(distance * distance + 3.f)) * RAD2DEG;
+    Perspective(fov / sqrtf(2.f),
+                size.x / size.y,
+                0.01f,
+                1000.f,
+                cubeProjection.m16);
+
+    // 6b) Build a LookAt matrix for the “cube” view:
+    vec_t dir = makeVect(viewInverse.m[2][0], viewInverse.m[2][1], viewInverse.m[2][2]);
+    vec_t up  = makeVect(viewInverse.m[1][0], viewInverse.m[1][1], viewInverse.m[1][2]);
+    vec_t eye = dir * distance;
+    vec_t zero = makeVect(0.f, 0.f, 0.f);
+    LookAt(&eye.x, &zero.x, &up.x, cubeView.m16);
+
+    // 7) Override ImGuizmo’s context so subsequent worldToPos(...) calls use this “cube” camera
+    gContext.mViewMat       = cubeView;
+    gContext.mProjectionMat = cubeProjection;
+    ComputeCameraRay(gContext.mRayOrigin, gContext.mRayVector, position, size);
+
+    // 8) Build the combined MVP (cubeView * cubeProjection)
+    const matrix_t res = cubeView * cubeProjection;
+
+    // 9) Instead of drawing the 6 cube faces, draw three unit axes:
+    //
+    //    Define 4 points in cube‐local space:
+    //      • origin   = (0,0,0)
+    //      • xAxis    = (1,0,0)
+    //      • yAxis    = (0,1,0)
+    //      • zAxis    = (0,0,1)
+    vec_t origin = makeVect(0.f, 0.f, 0.f);
+    vec_t xAxis  = makeVect(1.f, 0.f, 0.f);
+    vec_t yAxis  = makeVect(0.f, 1.f, 0.f);
+    vec_t zAxis  = makeVect(0.f, 0.f, 1.f);
+
+    // 9a) Project each point into screen space (widget‐local coordinates) via worldToPos(...)
+    ImVec2 originSS = worldToPos(origin, res, position, size);  // :contentReference[oaicite:2]{index=2}
+    ImVec2 xAxisSS  = worldToPos(xAxis,  res, position, size);  // :contentReference[oaicite:3]{index=3}
+    ImVec2 yAxisSS  = worldToPos(yAxis,  res, position, size);  // :contentReference[oaicite:4]{index=4}
+    ImVec2 zAxisSS  = worldToPos(zAxis,  res, position, size);  // :contentReference[oaicite:5]{index=5}
+
+    // 10) Line thickness is taken from the current ImGuizmo style:
+    float thickness = GetStyle().HatchedAxisLineThickness;         // :contentReference[oaicite:6]{index=6}
+
+    // 11) Draw three colored lines: +X=red, +Y=green, +Z=blue
+    gContext.mDrawList->AddLine(originSS, xAxisSS, GetColorU32(DIRECTION_X), thickness);  // :contentReference[oaicite:7]{index=7}
+    gContext.mDrawList->AddLine(originSS, yAxisSS, GetColorU32(DIRECTION_Y), thickness);  // :contentReference[oaicite:8]{index=8}
+    gContext.mDrawList->AddLine(originSS, zAxisSS, GetColorU32(DIRECTION_Z), thickness);  // :contentReference[oaicite:9]{index=9}
+
+    // 12) Restore the original view/projection context (exactly how ViewManipulate ends)
+    ComputeContext(svgView.m16, svgProjection.m16, gContext.mModelSource.m16, gContext.mMode);
+}
+
+
+
+
+}
+
+
+
