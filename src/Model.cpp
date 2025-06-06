@@ -1,8 +1,8 @@
 #include "Model.h"
 #include "Shader.h"
 #include "glad/glad.h"
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include "ObjConverter.h"
+#include "TextureLoader.h"
 #include <assimp/Importer.hpp>
 #include <assimp/Exporter.hpp>
 #include <assimp/postprocess.h>
@@ -15,7 +15,7 @@ Model::Model( std::string& path) {
 
     std::cout<< "Loading model from: " << path << std::endl;
     std::string outPath = directory + "/temp.stl";
-    ConvertObjToStl(path, outPath);
+    ObjConverter::Convert(path, outPath);
     loadModel(path);
     computeBounds();
 
@@ -49,44 +49,6 @@ void Model::Draw(const Shader& shader) const {
 }
 
 
-void Model::ConvertObjToStl( std::string& inObjPath,std::string& outStlPath) {
-
-    if (inObjPath.empty() || outStlPath.empty()) {
-        throw std::invalid_argument("Input or output path is empty");
-    }
-    if (inObjPath == outStlPath) {
-        throw std::invalid_argument("Input and output paths must be different");
-    }
-    if (inObjPath.substr(inObjPath.find_last_of(".") + 1) != "obj") {
-        return;
-    }
-
-    Assimp::Importer importer;
-    const aiScene* scene = importer.ReadFile(inObjPath,
-                                             aiProcess_Triangulate
-                                             | aiProcess_GenSmoothNormals
-                                             | aiProcess_JoinIdenticalVertices
-                                             | aiProcess_SortByPType
-    );
-
-    if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-        throw std::runtime_error(std::string("Assimp load error: ")
-                                 + importer.GetErrorString());
-    }
-
-
-    Assimp::Exporter exporter;
-    aiReturn exportRet = exporter.Export(scene,
-                                         "stl",
-                                         outStlPath,
-                                         0
-    );
-    if (exportRet != aiReturn_SUCCESS) {
-        throw std::runtime_error(std::string("Assimp export error: ")
-                                 + exporter.GetErrorString());
-    }
-    inObjPath = outStlPath;
-}
 
 void Model::loadModel(const std::string& path) {
     Assimp::Importer importer;
@@ -128,8 +90,9 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
 
     if (mesh->mMaterialIndex >= 0) {
         aiMaterial* mat = scene->mMaterials[mesh->mMaterialIndex];
-        auto diffuse  = loadMaterialTextures(mat, aiTextureType_DIFFUSE,  "texture_diffuse");
-        auto specular = loadMaterialTextures(mat, aiTextureType_SPECULAR, "texture_specular");
+        TextureLoader loader;
+        auto diffuse  = loader.LoadMaterialTextures(mat, aiTextureType_DIFFUSE,  "texture_diffuse", directory);
+        auto specular = loader.LoadMaterialTextures(mat, aiTextureType_SPECULAR, "texture_specular", directory);
         textures.insert(textures.end(), diffuse.begin(), diffuse.end());
         textures.insert(textures.end(), specular.begin(), specular.end());
     }
@@ -137,35 +100,6 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
     return {std::move(vertices), std::move(indices), std::move(textures)};
 }
 
-std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type,
-                                                 const std::string& typeName)
-{
-    std::vector<Texture> ret;
-    for (unsigned i = 0; i < mat->GetTextureCount(type); ++i) {
-        aiString str;
-        mat->GetTexture(type, i, &str);
-        std::string filename = directory + "/" + str.C_Str();
-        Texture tex;
-        tex.type = typeName;
-        tex.path = filename;
-        glGenTextures(1, &tex.id);
-        int w,h,n;
-        unsigned char* data = stbi_load(filename.c_str(), &w,&h,&n,0);
-        if (data) {
-            GLenum fmt = (n==3? GL_RGB: GL_RGBA);
-            glBindTexture(GL_TEXTURE_2D, tex.id);
-            glTexImage2D(GL_TEXTURE_2D,0,fmt,w,h,0,fmt,GL_UNSIGNED_BYTE,data);
-            glGenerateMipmap(GL_TEXTURE_2D);
-            glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-            stbi_image_free(data);
-            ret.push_back(tex);
-        }
-    }
-    return ret;
-}
 
 void Model::computeBounds() {
     glm::vec3 mn( FLT_MAX), mx(-FLT_MAX);

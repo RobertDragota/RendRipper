@@ -33,9 +33,7 @@ public:
     const std::vector<float>& GetLayerHeights() const { return layerZs_; }
 
 private:
-    void parseGCode(const std::string& path);
     void computeBounds();
-    void uploadToGPU();
 
     static constexpr glm::vec3 kModelColor   = glm::vec3(0.8f, 0.8f, 0.8f);
     static constexpr glm::vec3 kInfillColor  = glm::vec3(0.9f, 0.4f, 0.1f);
@@ -63,5 +61,5 @@ private:
     bool ready_{false};
 
     // We do *not* keep one big “lineVertices_” vector anymore; it's now split per layer.
-    // We only use temporary storage in parseGCode.
+    // Temporary storage is used only during parsing.
 };
