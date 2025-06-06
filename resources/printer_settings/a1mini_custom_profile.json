@@ -1,0 +1,89 @@
+{
+  "version": 4,
+  "name": "A1 Mini Custom Profile",
+  "inherits": "bambulab_a1mini",
+  "metadata": {},
+  "overrides": {
+    "version": {
+      "value": 4.0
+    },
+    "name": {
+      "value": "custom_extruder_8 #2_settings"
+    },
+    "definition": {
+      "value": "custom_extruder_8"
+    },
+    "type": {
+      "value": "definition_changes"
+    },
+    "setting_version": {
+      "value": 25.0
+    },
+    "extruders_enabled_count": {
+      "value": 1.0
+    },
+    "gantry_height": {
+      "value": 35.5
+    },
+    "machine_depth": {
+      "value": 180.0
+    },
+    "machine_end_gcode": {
+      "value": "G91\nG1 E-2 F2700\nG1 E-2 Z0.2 F2400\nG1 X5 Y5 F3000\nG1 Z10\nG90\nG1 X0 Y180\nM106 S0\nM104 S0\nM140 S0\nM84 X Y E"
+    },
+    "machine_head_with_fans_polygon": {
+      "value": "[[-40, 30], [-40, -90], [40, 30], [40, -90]]"
+    },
+    "machine_heated_bed": {
+      "value": "True"
+    },
+    "machine_height": {
+      "value": 180.0
+    },
+    "machine_start_gcode": {
+      "value": "G28\nM140 S60\nM109 S140\nM1002 gcode_claim_action : 3\nG0 X50 Y175 F20000\nM104 S0\nG28 Z P0 T300\nM104 S155\nG1 X90 Y-1 Z5 F30000\nM400 P200\nM970.3 Q1 A7 K0 O2\nM974 Q1 S2 P0\nG1 X90 Y0 Z5 F30000\nM400 P200\nM970 Q0 A5 B50 C90 H15 K0 M20 O3\nM970.3 Q0 A7 K0\nM974 Q0 S2 P0\nM975 S1\nG1 F30000\nG1 X-1 Y10\nG28 X\nm1002 set_flag g29_before_print_flag=1\nM1002 judge_flag g29_before_print_flag\nM622 J1\nM1002 gcode_claim_action : 1\nG29 A T155\nM400\nM500\nM623\nM109 S220\nM140 S60\nM412 S1\nM400 P10\nG392 S1\nM620.3 W1\nM975 S1\nG92 E0\nG1 Z4.0 F3000\nG92 E0\nG1 X1.1 Y20 Z0.28 F5000.0\nG1 X1.1 Y80.0 Z0.28 F1500.0 E10\nG1 X1.4 Y80.0 Z0.28 F5000.0\nG1 X1.4 Y20 Z0.28 F1500.0 E20\nG92 E0\nG1 Z2.0 F3000"
+    },
+    "machine_width": {
+      "value": 180.0
+    },
+    "material_diameter": {
+      "value": 1.75
+    },
+    "roofing_layer_count": {
+      "value": 1.0
+    },
+    "alternate_extra_perimeter": {
+      "value": false
+    },
+    "flooring_layer_count": {
+      "value": 1.0
+    },
+    "support_enable": {
+      "value": true
+    },
+    "support_type": {
+      "value": "tree"
+    },
+    "support_overhang_angle": {
+      "value": 45.0
+    },
+    "support_density": {
+      "value": 20.0
+    },
+    "support_horizontal_expansion": {
+      "value": 0.7
+    },
+    "support_minimum_branch_diameter": {
+      "value": 1.2
+    },
+    "support_interface_layers": {
+      "value": 2.0
+    },
+    "support_interface_density": {
+      "value": 100.0
+    },
+    "support_z_seam_away_from_model": {
+      "value": "False"
+    }
+  }
+}

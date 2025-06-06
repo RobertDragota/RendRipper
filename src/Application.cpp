@@ -344,24 +344,30 @@ void Application::showMenuBar()
                     });
 
                 }
-            if (ImGui::MenuItem("Open G-code...")) {
-                openFileDialog([this](std::string &selectedPath){
+            if (ImGui::MenuItem("Open G-code..."))
+                {
+                openFileDialog([this](std::string &selectedPath)
+                    {
                     // 1) Create & parse the G-code file
-                    try {
+                    try
+                        {
                         gcodeModel_ = std::make_shared<GCodeModel>(selectedPath);
                         // 2) Give it to the SceneRenderer
                         renderer_->SetGCodeModel(gcodeModel_);
                         // 3) Reset the current layer index to “all” (draw everything)
                         currentGCodeLayer_ = -1;
                         // You might also want to adjust the camera so you can see the whole print volume here.
-                    } catch (const std::exception &e) {
+                        }
+                    catch (const std::exception &e)
+                        {
                         std::cerr << "Failed to load G-code: " << e.what() << std::endl;
-                    }
-                });
-            }
-            if (activeModel_ != -1 && ImGui::MenuItem("Slice Model")) {
+                        }
+                    });
+                }
+            if (activeModel_ != -1 && ImGui::MenuItem("Slice Model"))
+                {
                 sliceActiveModel();
-            }
+                }
             if (ImGui::MenuItem("Exit"))
                 {
                 glfwSetWindowShouldClose(window_, true);
@@ -682,8 +688,7 @@ void Application::showSlicingModal()
                            fg,
                            bg);
 
-        ImGui::Spacing();
-        {
+        ImGui::Spacing(); {
             std::lock_guard<std::mutex> lk(slicingMessageMutex_);
             std::string msg = slicingMessage_;
             float tw2 = ImGui::CalcTextSize(msg.c_str()).x;
@@ -719,71 +724,72 @@ void Application::sliceActiveModel()
 
     std::thread([this, stlPath]()
         {
-            std::filesystem::path model = std::filesystem::path("Slicer/model_settings.json");
-            if (!std::filesystem::exists(model))
-                {
-                std::lock_guard lk(slicingMessageMutex_);
-                slicingMessage_ = "model_settings.json not found.";
-                }
 
-            std::filesystem::path output = std::filesystem::path(stlPath).replace_extension(".gcode");
-            std::string cmd = std::string(CURA_ENGINE_EXE) +
-                              " slice -j fdmprinter.def.json -j bambulab_base.def.json -j bambulab_a1mini.def.json -j " + model.string() +
-                              " -l \"" + stlPath + "\"" +
-                              " -o \"" + output.string() + "\" 2>&1";
+        if (!std::filesystem::exists(MODEL_SETTINGS_FILE))
+            {
+            std::lock_guard lk(slicingMessageMutex_);
+            slicingMessage_ = "model_settings.json not found.";
+            }
 
+        std::filesystem::path output = std::filesystem::path(stlPath).replace_extension(".gcode");
+        std::string cmd = std::string(CURA_ENGINE_EXE) +
+                          " slice -j " + std::string(PRIMITIVE_PRINTER_SETTINGS_FILE) + " -j " +
+                          std::string(BASE_PRINTER_SETTINGS_FILE) + " -j " + std::string(A1MINI_PRINTER_SETTINGS_FILE) +
+                          " -j " + std::string(MODEL_SETTINGS_FILE) +
+                          " -l \"" + stlPath + "\"" +
+                          " -o \"" + output.string() + "\"";
+        std::cout << cmd;
 #ifdef _WIN32
-            FILE *pipe = _popen(cmd.c_str(), "r");
+        FILE *pipe = _popen(cmd.c_str(), "r");
 #else
             FILE *pipe = popen(cmd.c_str(), "r");
 #endif
-            if (!pipe)
-                {
-                std::lock_guard lk(slicingMessageMutex_);
-                slicingMessage_ = "Failed to start CuraEngine.";
-                slicingDone_.store(true);
-                slicingProgress_.store(1.0f);
-                return;
-                }
+        if (!pipe)
+            {
+            std::lock_guard lk(slicingMessageMutex_);
+            slicingMessage_ = "Failed to start CuraEngine.";
+            slicingDone_.store(true);
+            slicingProgress_.store(1.0f);
+            return;
+            }
 
-            char buffer[512];
-            while (fgets(buffer, sizeof(buffer), pipe))
-                {
-                std::string line(buffer);
-                if (!line.empty() && line.back() == '\n')
-                    line.pop_back();
-                {
-                    std::lock_guard lk(slicingMessageMutex_);
-                    slicingMessage_ = line;
-                }
-                }
+        char buffer[512];
+        while (fgets(buffer, sizeof(buffer), pipe))
+            {
+            std::string line(buffer);
+            if (!line.empty() && line.back() == '\n')
+                line.pop_back(); {
+                std::lock_guard lk(slicingMessageMutex_);
+                slicingMessage_ = line;
+            }
+            }
 #ifdef _WIN32
-            int ret = _pclose(pipe);
+        int ret = _pclose(pipe);
 #else
             int ret = pclose(pipe);
 #endif
-            {
-                std::lock_guard lk(slicingMessageMutex_);
-                slicingMessage_ = (ret == 0) ? "Slicing complete!" : ("Slicing failed (code " + std::to_string(ret) + ")");
-            }
-            slicingProgress_.store(1.0f);
-            slicingDone_.store(true);
+        {
+            std::lock_guard lk(slicingMessageMutex_);
+            slicingMessage_ = (ret == 0) ? "Slicing complete!" : ("Slicing failed (code " + std::to_string(ret) + ")");
+        }
+        slicingProgress_.store(1.0f);
+        slicingDone_.store(true);
 
-            if (ret == 0)
+        if (ret == 0)
+            {
+            try
                 {
-                try
-                    {
-                    auto gm = std::make_shared<GCodeModel>(output.string());
-                    renderer_->SetGCodeModel(gm);
-                    gcodeModel_ = gm;
-                    currentGCodeLayer_ = -1;
-                    }
-                catch (const std::exception &e)
-                    {
-                    std::lock_guard lk(slicingMessageMutex_);
-                    slicingMessage_ += std::string(" | Load failed: ") + e.what();
-                    }
+                auto gm = std::make_shared<GCodeModel>(output.string());
+                renderer_->SetGCodeModel(gm);
+                gcodeModel_ = gm;
+                currentGCodeLayer_ = -1;
                 }
+            catch (const std::exception &e)
+                {
+                std::lock_guard lk(slicingMessageMutex_);
+                slicingMessage_ += std::string(" | Load failed: ") + e.what();
+                }
+            }
         }).detach();
 }
 
@@ -1086,34 +1092,39 @@ void Application::openModelPropertiesDialog()
         ImGui::Text("No model selected.");
         }
 
-
-    if (gcodeModel_) {
+    if (gcodeModel_)
+        {
         int layerCount = gcodeModel_->GetLayerCount();
         auto layerHeights = gcodeModel_->GetLayerHeights();
 
         // Keep currentGCodeLayer_ in [-1..layerCount-1]
-        if (currentGCodeLayer_ < -1) currentGCodeLayer_ = -1;
-        if (currentGCodeLayer_ > layerCount - 1) currentGCodeLayer_ = layerCount - 1;
+        if (currentGCodeLayer_ < -1)
+            currentGCodeLayer_ = -1;
+        if (currentGCodeLayer_ > layerCount - 1)
+            currentGCodeLayer_ = layerCount - 1;
 
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 10); // small indent
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 10);
         ImGui::BeginGroup();
         ImGui::Text("G-code Layers:");
         // Show a slider from 0..layerCount-1, or -1 = “All layers”
-        if (layerCount > 0) {
+        if (layerCount > 0)
+            {
             // Build a tooltip string showing Z for each layer value:
             ImGui::Text("Z = %.2f mm (layer %d of %d)",
-                        layerHeights[ (currentGCodeLayer_ < 0 ? 0 : currentGCodeLayer_) ],
+                        layerHeights[(currentGCodeLayer_ < 0 ? 0 : currentGCodeLayer_)],
                         (currentGCodeLayer_ < 0 ? 0 : currentGCodeLayer_), layerCount - 1);
 
             // Slider from -1..(layerCount-1)
             ImGui::SliderInt("Layer", &currentGCodeLayer_, -1, layerCount - 1,
                              currentGCodeLayer_ < 0 ? "All" : "%d");
-        } else {
+            }
+        else
+            {
             ImGui::Text("No layers found in G-code");
-        }
+            }
         ImGui::EndGroup();
-    }
+        }
 
     ImGui::End();
 }
@@ -1165,8 +1176,6 @@ void Application::renderModels(glm::mat4 &)
             }
         }
 }
-
-
 
 void Application::MainLoop()
 {

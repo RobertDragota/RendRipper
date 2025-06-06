@@ -152,6 +152,10 @@ target_compile_definitions(RendRipper PRIVATE
 		GENERATE_MODEL_SCRIPT=\"${CMAKE_CURRENT_SOURCE_DIR}/3DModelGenerator/TripoSR/run.py\"
                 OUTPUT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/resources/generated_models\"
                 CURA_ENGINE_EXE=\"${CMAKE_CURRENT_SOURCE_DIR}/Slicer/CuraEngine/build/Release/CuraEngine.exe\"
+				MODEL_SETTINGS_FILE=\"${CMAKE_CURRENT_SOURCE_DIR}/resources/model_settings/model_settings.json\"
+		        PRIMITIVE_PRINTER_SETTINGS_FILE=\"${CMAKE_CURRENT_SOURCE_DIR}/resources/printer_settings/fdmprinter.def.json\"
+		        BASE_PRINTER_SETTINGS_FILE=\"${CMAKE_CURRENT_SOURCE_DIR}/resources/printer_settings/bambulab_base.def.json\"
+		        A1MINI_PRINTER_SETTINGS_FILE=\"${CMAKE_CURRENT_SOURCE_DIR}/resources/printer_settings/bambulab_a1mini.def.json\"
                 MESHLIB_AVAILABLE
 )
 
