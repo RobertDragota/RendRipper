@@ -148,10 +148,16 @@ target_include_directories(_CuraEngine INTERFACE
 # ────────────────────────────────────────────────────────────────────────────────
 # 16) Optional meshlib availability define (if your code tests MESHLIB_AVAILABLE)
 target_compile_definitions(RendRipper PRIVATE
-		PYTHON_EXECUTABLE=\"${CMAKE_CURRENT_SOURCE_DIR}/3DModelGenerator/TripoSR/.venv/Scripts/python.exe\"
-		GENERATE_MODEL_SCRIPT=\"${CMAKE_CURRENT_SOURCE_DIR}/3DModelGenerator/TripoSR/run.py\"
-		OUTPUT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/resources/generated_models\"
-		MESHLIB_AVAILABLE
+                PYTHON_EXECUTABLE=\"${CMAKE_CURRENT_SOURCE_DIR}/3DModelGenerator/TripoSR/.venv/Scripts/python.exe\"
+                GENERATE_MODEL_SCRIPT=\"${CMAKE_CURRENT_SOURCE_DIR}/3DModelGenerator/TripoSR/run.py\"
+                OUTPUT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/resources/generated_models\"
+                CURA_ENGINE_EXE=\"${CMAKE_CURRENT_SOURCE_DIR}/Slicer/CuraEngine/build/Release/CuraEngine.exe\"
+                FDMPRINTER_DEF=\"${CMAKE_CURRENT_SOURCE_DIR}/Slicer/CuraEngine/build/Release/fdmprinter.def.json\"
+                BAMBULAB_BASE_DEF=\"${CMAKE_CURRENT_SOURCE_DIR}/Slicer/CuraEngine/build/Release/bambulab_base.def.json\"
+                BAMBULAB_A1MINI_DEF=\"${CMAKE_CURRENT_SOURCE_DIR}/Slicer/CuraEngine/build/Release/bambulab_a1mini.def.json\"
+                DRAGON_SETTINGS_PATH=\"${CMAKE_CURRENT_SOURCE_DIR}/Slicer/CuraEngine/build/Release/dragon_settings.json\"
+                MODEL_SETTINGS_PATH=\"${CMAKE_CURRENT_SOURCE_DIR}/Slicer/CuraEngine/build/Release/model_settings.json\"
+                MESHLIB_AVAILABLE
 )
 
 # ────────────────────────────────────────────────────────────────────────────────

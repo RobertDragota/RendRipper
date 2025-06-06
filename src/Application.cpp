@@ -12,6 +12,7 @@
 #include <ImGuizmo.h>
 
 #include <glm/gtc/type_ptr.hpp>
+#include <fstream>
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -358,6 +359,9 @@ void Application::showMenuBar()
                     }
                 });
             }
+            if (ImGui::MenuItem("Slice with CuraEngine", nullptr, false, activeModel_ != -1)) {
+                sliceActiveModel();
+            }
             if (ImGui::MenuItem("Exit"))
                 {
                 glfwSetWindowShouldClose(window_, true);
@@ -442,6 +446,8 @@ void Application::openFileDialog(const std::function<void(std::string &)> &onFil
 
 void Application::loadImageFor3DModel(std::string &imagePath)
 {
+
+    loadModelAfterGeneration_ = true;
 
     generating_.store(true, std::memory_order_release);
     generationDone_.store(false, std::memory_order_release);
@@ -545,6 +551,101 @@ void Application::loadImageFor3DModel(std::string &imagePath)
         }).detach();
 }
 
+void Application::sliceActiveModel()
+{
+    if (activeModel_ < 0 || activeModel_ >= static_cast<int>(modelFilePaths_.size()))
+        return;
+
+    loadModelAfterGeneration_ = false;
+
+    generating_.store(true, std::memory_order_release);
+    generationDone_.store(false, std::memory_order_release);
+    progress_.store(0.0f, std::memory_order_release);
+
+    std::string stlPath = modelFilePaths_[activeModel_];
+    std::string outDir = stlPath.substr(0, stlPath.find_last_of("/\\"));
+    std::string gcodePath = outDir + "/output.gcode";
+
+    std::thread([this, stlPath, gcodePath]() {
+        {
+            std::lock_guard lk(generationMessageMutex_);
+            generationMessage_ = "Launching CuraEngine";
+        }
+
+        // copy dragon settings to model_settings.json
+        try {
+            std::ifstream src(DRAGON_SETTINGS_PATH, std::ios::binary);
+            std::ofstream dst(MODEL_SETTINGS_PATH, std::ios::binary);
+            dst << src.rdbuf();
+        } catch(const std::exception&) {
+            // ignore errors
+        }
+
+        std::string cmd =
+                std::string(CURA_ENGINE_EXE) +
+                " slice -j " + FDMPRINTER_DEF +
+                " -j " + BAMBULAB_BASE_DEF +
+                " -j " + BAMBULAB_A1MINI_DEF +
+                " -j " + MODEL_SETTINGS_PATH +
+                " -l \"" + stlPath + "\"" +
+                " -o \"" + gcodePath + "\" 2>&1";
+
+#ifdef _WIN32
+        FILE* pipe = _popen(cmd.c_str(), "r");
+#else
+        FILE* pipe = popen(cmd.c_str(), "r");
+#endif
+        if (!pipe)
+        {
+            std::lock_guard lk(generationMessageMutex_);
+            generationMessage_ = "Failed to start CuraEngine process.";
+            generationDone_.store(true, std::memory_order_release);
+            progress_.store(1.0f, std::memory_order_release);
+            return;
+        }
+
+        char buffer[512];
+        while (fgets(buffer, sizeof(buffer), pipe))
+        {
+            std::string line(buffer);
+            if (!line.empty() && line.back() == '\n')
+                line.pop_back();
+            {
+                std::lock_guard lk(generationMessageMutex_);
+                generationMessage_ = line;
+            }
+        }
+
+#ifdef _WIN32
+        int ret = _pclose(pipe);
+#else
+        int ret = pclose(pipe);
+#endif
+
+        {
+            std::lock_guard lk(generationMessageMutex_);
+            if (ret == 0)
+                generationMessage_ = "Slicing complete!";
+            else
+                generationMessage_ = "Slicing failed (code " + std::to_string(ret) + ")";
+        }
+        progress_.store(1.0f, std::memory_order_release);
+        generationDone_.store(true, std::memory_order_release);
+
+        if (ret == 0)
+        {
+            try {
+                gcodeModel_ = std::make_shared<GCodeModel>(gcodePath);
+                renderer_->SetGCodeModel(gcodeModel_);
+                currentGCodeLayer_ = -1;
+            } catch(const std::exception& e) {
+                std::lock_guard lk(generationMessageMutex_);
+                generationMessage_ = std::string("Failed to load G-code: ") + e.what();
+            }
+        }
+    }).detach();
+}
+
 void Application::showErrorModal(std::string &message)
 {
     if (showErrorModal_)
@@ -629,8 +730,11 @@ void Application::showGenerationModal()
             if (ImGui::Button("Close", ImVec2(bw, 0)))
                 {
                 ImGui::CloseCurrentPopup();
-                std::string path = std::string(OUTPUT_DIR) + "/0/mesh.obj";
-                loadModel(path);
+                if (loadModelAfterGeneration_)
+                    {
+                    std::string path = std::string(OUTPUT_DIR) + "/0/mesh.obj";
+                    loadModel(path);
+                    }
                 generationDone_.store(false);
                 }
             }
@@ -654,6 +758,7 @@ void Application::loadModel(std::string &modelPath)
         glm::vec3 size = maxB - minB;
 
         loadedMeshDimensions_.push_back(size);
+        modelFilePaths_.push_back(output);
 
         glm::vec3 oC = mPtr->center, oMin = mPtr->minBounds, oMax = mPtr->maxBounds;
         auto t = std::make_unique<Transform>();
@@ -701,6 +806,8 @@ void Application::UnloadModel(int idx)
     models_.erase(models_.begin() + idx);
     modelShaders_.erase(modelShaders_.begin() + idx);
     modelTransformations_.erase(modelTransformations_.begin() + idx);
+    if (idx < modelFilePaths_.size())
+        modelFilePaths_.erase(modelFilePaths_.begin() + idx);
     if (activeModel_ == idx)
         activeModel_ = -1;
     else if (activeModel_ > idx)

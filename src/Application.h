@@ -83,6 +83,8 @@ private:
     bool showErrorModal_ = false;
     std::string errorModalMessage_;
     std::vector<glm::vec3> loadedMeshDimensions_;
+    std::vector<std::string> modelFilePaths_;
+    bool loadModelAfterGeneration_ = true;
     // Camera: Z-up orbital
     void cameraView(glm::mat4 &view, glm::vec3 &cameraWorldPosition) const;
 
@@ -94,6 +96,7 @@ private:
 
     void loadModel( std::string&  modelPath );
     void loadImageFor3DModel(std::string&  imagePath);
+    void sliceActiveModel();
 
     // Interaction
     void getActiveModel(glm::mat4 &viewMatrix, const ImVec2& viewportScreenPos, const ImVec2& viewportSize);
