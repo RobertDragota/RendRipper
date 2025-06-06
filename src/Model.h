@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <assimp/scene.h>
 #include "Mesh.h"
+#include "ModelLoader.h"
 enum class Axis { X_UP, Y_UP, Z_UP };
 class Model {
 public:
@@ -36,7 +37,4 @@ private:
     std::string directory;
     std::vector<Mesh> meshes;
 
-    void loadModel(const std::string& path);
-    void processNode(aiNode* node, const aiScene* scene);
-    Mesh processMesh(aiMesh* mesh, const aiScene* scene);
 };
