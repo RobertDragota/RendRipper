@@ -6,6 +6,7 @@
 #include "GridRenderer.h"
 #include "VolumeBoxRenderer.h"
 #include "AxesRenderer.h"
+#include "FrameBuffer.h"
 using json = nlohmann::json;
 
 class Shader;
@@ -24,7 +25,7 @@ public:
     void RenderGCodeUpToLayer(int maxLayerIndex);
     void SetViewportSize(int width, int height);
 
-    GLuint GetSceneTexture() const { return colorTex_; }
+    GLuint GetSceneTexture() const { return framebuffer_.GetColorTexture(); }
     const glm::mat4 &GetViewMatrix() const { return viewMatrix_; }
     const glm::mat4 &GetProjectionMatrix() const { return projectionMatrix_; }
     void SetGridColor(const glm::vec3 &color) { gridColor_ = color; }
@@ -38,18 +39,14 @@ public:
 
 private:
     void InitializeDefaultTexture();
-    void InitializeFBO();
     void InitializeGrid();
     void InitializeVolumeBox();
     void InitializeAxes();
-    void ResizeFBOIfNeeded(int width, int height);
     void RenderGridAndVolume();
     void RenderAxes();
 
-    GLuint fbo_ = 0;
-    GLuint colorTex_ = 0;
-    GLuint rboDepthStencil_ = 0;
-    GLuint defaultWhiteTex_ = 0;
+    FrameBuffer framebuffer_;
+    GLuint     defaultWhiteTex_ = 0;
 
     glm::vec3 gridColor_ = glm::vec3(0.4f, 0.4f, 0.45f);
     int viewportWidth_ = 1;

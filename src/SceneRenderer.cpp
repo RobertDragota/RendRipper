@@ -35,7 +35,7 @@ SceneRenderer::SceneRenderer(const std::string &printerDefJsonPath)
     }
 
     InitializeDefaultTexture();
-    InitializeFBO();
+    framebuffer_.Init(viewportWidth_, viewportHeight_);
     InitializeGrid();
     InitializeVolumeBox();
     InitializeAxes();
@@ -51,9 +51,6 @@ SceneRenderer::SceneRenderer(const std::string &printerDefJsonPath)
 
 SceneRenderer::~SceneRenderer()
 {
-    if (fbo_) glDeleteFramebuffers(1, &fbo_);
-    if (colorTex_) glDeleteTextures(1, &colorTex_);
-    if (rboDepthStencil_) glDeleteRenderbuffers(1, &rboDepthStencil_);
     if (defaultWhiteTex_) glDeleteTextures(1, &defaultWhiteTex_);
 }
 
@@ -68,12 +65,6 @@ void SceneRenderer::InitializeDefaultTexture()
     glBindTexture(GL_TEXTURE_2D,0);
 }
 
-void SceneRenderer::InitializeFBO()
-{
-    glGenFramebuffers(1, &fbo_);
-    glGenTextures(1, &colorTex_);
-    glGenRenderbuffers(1, &rboDepthStencil_);
-}
 
 void SceneRenderer::InitializeGrid()
 {
@@ -95,41 +86,15 @@ void SceneRenderer::SetViewportSize(int width, int height)
     if (width <= 0) width = 1;
     if (height <= 0) height = 1;
     viewportWidth_ = width; viewportHeight_ = height;
-    ResizeFBOIfNeeded(width, height);
+    framebuffer_.Resize(width, height);
     projectionMatrix_ = glm::perspective(glm::radians(45.f), static_cast<float>(width)/static_cast<float>(height), 0.1f, 1000.f);
 }
 
-void SceneRenderer::ResizeFBOIfNeeded(int width, int height)
-{
-    if (!fbo_ || !colorTex_ || !rboDepthStencil_) {
-        InitializeFBO();
-        if (!fbo_ || !colorTex_ || !rboDepthStencil_) {
-            std::cerr << "E:FBO Comp Fail\n"; return; }
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
-    glBindTexture(GL_TEXTURE_2D, colorTex_);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex_, 0);
-    glBindRenderbuffer(GL_RENDERBUFFER, rboDepthStencil_);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rboDepthStencil_);
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        std::cerr << "E:FBO Not Comp!" << std::endl;
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glBindRenderbuffer(GL_RENDERBUFFER,0);
-    glBindFramebuffer(GL_FRAMEBUFFER,0);
-}
 
 void SceneRenderer::BeginScene(const glm::mat4 &viewMatrix, const glm::vec3 &)
 {
-    if (!fbo_) {
-        std::cerr << "E:FBO Not Init BS\n"; return; }
     viewMatrix_ = viewMatrix;
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
+    framebuffer_.Bind();
     glViewport(0,0,viewportWidth_,viewportHeight_);
     glClearColor(0.10f,0.105f,0.11f,1.0f);
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
@@ -139,7 +104,7 @@ void SceneRenderer::BeginScene(const glm::mat4 &viewMatrix, const glm::vec3 &)
 
 void SceneRenderer::EndScene()
 {
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    framebuffer_.Unbind();
 }
 
 void SceneRenderer::RenderModel(const Model &model, Shader &shader, const Transform &transform)
