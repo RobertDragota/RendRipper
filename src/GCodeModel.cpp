@@ -153,8 +153,9 @@ void GCodeModel::parseGCode(const std::string& path) {
             // Shade based on line direction and a simple light
             glm::vec3 lightDir = glm::normalize(glm::vec3(0.5f, 0.5f, 1.0f));
             glm::vec3 dir = glm::normalize(currentPos - lastPos);
-            float intensity = 0.6f + 0.4f * fabs(glm::dot(dir, lightDir));
-            glm::vec3 finalColor = currentColor * intensity;
+            float intensity = 0.8f + 0.4f * fabs(glm::dot(dir, lightDir));
+            glm::vec3 finalColor = glm::clamp(currentColor * intensity,
+                                             glm::vec3(0.0f), glm::vec3(1.0f));
 
             layers_[currentLayerIndex].push_back({lastPos, finalColor});
             layers_[currentLayerIndex].push_back({currentPos, finalColor});
@@ -239,8 +240,10 @@ bool GCodeModel::DrawLayer(int layerIndex, Shader& lineShader) const {
     // Or pick a gradient color based on layerIndex, etc.
 
     glBindVertexArray(layerVAOs_[layerIndex]);
+    glLineWidth(2.0f);
     // Each layer has exactly (layers_[i].size()/2) segments → so total vertices = layers_[i].size()
     glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(layers_[layerIndex].size()));
+    glLineWidth(1.0f);
     glBindVertexArray(0);
     return true;
 }
@@ -262,7 +265,9 @@ void GCodeModel::DrawUpToLayer(int maxLayerIndex, Shader& lineShader) const {
         const auto& verts = layers_[i];
         if (verts.empty()) continue;
         glBindVertexArray(layerVAOs_[i]);
+        glLineWidth(2.0f);
         glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(verts.size()));
+        glLineWidth(1.0f);
     }
     glBindVertexArray(0);
 }
