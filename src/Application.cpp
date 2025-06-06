@@ -719,21 +719,16 @@ void Application::sliceActiveModel()
 
     std::thread([this, stlPath]()
         {
-            std::filesystem::path dragon = std::filesystem::path("Slicer/CuraEngine/build/Release/dragon_settings.json");
-            std::filesystem::path model = std::filesystem::path("Slicer/CuraEngine/build/Release/model_settings.json");
-            try
-                {
-                std::filesystem::copy_file(dragon, model, std::filesystem::copy_options::overwrite_existing);
-                }
-            catch (const std::exception &e)
+            std::filesystem::path model = std::filesystem::path("Slicer/model_settings.json");
+            if (!std::filesystem::exists(model))
                 {
                 std::lock_guard lk(slicingMessageMutex_);
-                slicingMessage_ = std::string("Settings copy failed: ") + e.what();
+                slicingMessage_ = "model_settings.json not found.";
                 }
 
             std::filesystem::path output = std::filesystem::path(stlPath).replace_extension(".gcode");
             std::string cmd = std::string(CURA_ENGINE_EXE) +
-                              " slice -j fdmprinter.def.json -j bambulab_base.def.json -j bambulab_a1mini.def.json -j model_settings.json" +
+                              " slice -j fdmprinter.def.json -j bambulab_base.def.json -j bambulab_a1mini.def.json -j " + model.string() +
                               " -l \"" + stlPath + "\"" +
                               " -o \"" + output.string() + "\" 2>&1";
 
