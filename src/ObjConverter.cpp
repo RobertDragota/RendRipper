@@ -2,6 +2,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/Exporter.hpp>
 #include <assimp/postprocess.h>
+#include <assimp/scene.h>
 #include <stdexcept>
 
 void ObjConverter::Convert(const std::string &inObjPath, const std::string &outStlPath)

@@ -14,7 +14,7 @@ struct Transform;
 
 class SceneRenderer {
 public:
-    explicit SceneRenderer(const std::string &printerDefJsonPath = "");
+    explicit SceneRenderer(const std::string &printerDefJsonPath );
     ~SceneRenderer();
 
     void BeginScene(const glm::mat4 &viewMatrix, const glm::vec3 &cameraWorldPosition);

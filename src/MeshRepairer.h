@@ -17,7 +17,7 @@ using namespace MR;
 
 class MeshLoader {
 public:
-    std::optional<MR::Mesh> Load(const std::string &path) const
+    auto Load(const std::string &path) const
     {
         return MeshLoad::fromAnySupportedFormat(path);
     }
