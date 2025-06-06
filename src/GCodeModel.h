@@ -8,6 +8,7 @@
 #include <regex>
 #include <glm/glm.hpp>
 #include "Shader.h"
+#include "GCodeParser.h" // for GCodeColoredVertex
 
 /// GCodeModel now groups extruding moves by “layer” (unique Z values).
 /// Each layer is one sequence of GL_LINES. You can draw a single layer or all layers up to some index.
@@ -44,10 +45,7 @@ private:
     glm::vec3 center_;
     float radius_;
 
-    struct ColoredVertex {
-        glm::vec3 pos;
-        glm::vec3 color;
-    };
+    using ColoredVertex = GCodeColoredVertex;
 
     // Each layer is now a flat list of ColoredVertex pairs forming line segments
     // layers_[i] = vertices for layer i, in consecutive pairs.
