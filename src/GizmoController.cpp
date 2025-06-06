@@ -15,7 +15,7 @@ GizmoController::GizmoController()
 
 void GizmoController::Manipulate(const glm::mat4 &view,
                                  const glm::mat4 &proj,
-                                 Transform &transform) {
+                                 ITransform &transform) {
     ImGuizmo::SetOrthographic(false);
     ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
     ImVec2 windowPos = ImGui::GetWindowPos();
@@ -24,9 +24,9 @@ void GizmoController::Manipulate(const glm::mat4 &view,
     ImGuizmo::SetRect(windowPos.x, windowPos.y, windowWidth, windowHeight);
 
     // current model matrix
-    glm::mat4 model = glm::translate(glm::mat4(1.0f), transform.translation)
-                      * glm::toMat4(transform.rotationQuat)
-                      * glm::scale(glm::mat4(1.0f), transform.scale);
+    glm::mat4 model = glm::translate(glm::mat4(1.0f), transform.getTranslation())
+                      * glm::toMat4(transform.getRotationQuat())
+                      * glm::scale(glm::mat4(1.0f), transform.getScale());
 
     float v[16], p[16], m[16];
     memcpy(v, glm::value_ptr(view), sizeof(v));
@@ -46,9 +46,9 @@ void GizmoController::Manipulate(const glm::mat4 &view,
         ComputeRotationMatrix(transformMatrix);
         ComputeTranslationMatrix(transformMatrix);
 
-        transform.translation = translation_;
-        transform.scale = scale_;
-        transform.rotationQuat = glm::quat_cast(rotation_);
+        transform.setTranslation(translation_);
+        transform.setScale(scale_);
+        transform.setRotationQuat(glm::quat_cast(rotation_));
     }
 }
 

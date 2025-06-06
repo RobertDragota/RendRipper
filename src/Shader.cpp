@@ -1,5 +1,5 @@
 #include "Shader.h"
-#include "IO_utility.h" // Assuming this provides readFile
+#include "IO_utility.h" // Provides FileIO helpers
 
 #include <glad/glad.h>
 #include <glm/gtc/type_ptr.hpp>
@@ -29,7 +29,7 @@ Shader::Shader(const char *vPath, const char *fPath, const char* gPath) {
 
     // 1. Compile vertex shader (if provided)
     if (hasVertex) {
-        std::string vsCode = IO_utility::readFile(vPath);
+        std::string vsCode = IO_utility::FileIO::ReadTextFile(vPath);
         const char *vSrc = vsCode.c_str();
         vsID = glCreateShader(GL_VERTEX_SHADER);
         glShaderSource(vsID, 1, &vSrc, nullptr);
@@ -44,7 +44,7 @@ Shader::Shader(const char *vPath, const char *fPath, const char* gPath) {
 
     // 2. Compile fragment shader (if provided)
     if (hasFragment) {
-        std::string fsCode = IO_utility::readFile(fPath);
+        std::string fsCode = IO_utility::FileIO::ReadTextFile(fPath);
         const char *fSrc = fsCode.c_str();
         fsID = glCreateShader(GL_FRAGMENT_SHADER);
         glShaderSource(fsID, 1, &fSrc, nullptr);
@@ -60,7 +60,7 @@ Shader::Shader(const char *vPath, const char *fPath, const char* gPath) {
 
     // 3. Compile geometry shader (if provided)
     if (hasGeometry) {
-        std::string gsCode = IO_utility::readFile(gPath);
+        std::string gsCode = IO_utility::FileIO::ReadTextFile(gPath);
         const char *gSrc = gsCode.c_str();
         gsID = glCreateShader(GL_GEOMETRY_SHADER);
         glShaderSource(gsID, 1, &gSrc, nullptr);
