@@ -6,30 +6,32 @@
 #include <ImGuizmo.h>
 #include "glm/detail/type_quat.hpp"
 #include "glm/gtc/quaternion.hpp"
+#include <memory>
 #include "Transform.h"
 
+
+class IGizmoOperation {
+public:
+    virtual ~IGizmoOperation() = default;
+    virtual void Apply(const glm::mat4 &matrix, ITransform &transform) = 0;
+};
 
 class GizmoController {
 public:
     GizmoController();
-    void Manipulate(const glm::mat4& view,
-                    const glm::mat4& proj,
-                    ITransform&       transform);
+    void Manipulate(const glm::mat4 &view,
+                    const glm::mat4 &proj,
+                    ITransform &transform);
 
-    ImGuizmo::OPERATION GetCurrentMode();
+    ImGuizmo::OPERATION GetCurrentMode() const;
 
     void SetCurrentMode(ImGuizmo::OPERATION operation);
 
 private:
-
-    void ComputeRotationMatrix( glm::mat4 & transformMatrix);
-    void ComputeTranslationMatrix( glm::mat4 & transformMatrix);
-    void ComputeScaleMatrix( glm::mat4 & transformMatrix);
+    void updateOperation();
 
     ImGuizmo::OPERATION currentOp_;
     ImGuizmo::MODE      currentMode_;
 
-    glm::mat3 rotation_{};
-    glm::vec3 translation_{};
-    glm::vec3 scale_{};
+    std::unique_ptr<IGizmoOperation> operation_;
 };

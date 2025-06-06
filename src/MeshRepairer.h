@@ -1,92 +1,109 @@
-//
-// Created by drago on 6/5/2025.
-//
+#pragma once
 
-#ifndef MESHREPAIRER_H
-#define MESHREPAIRER_H
-
+#include <MRMesh/MRMesh.h>
 #include <MRMesh/MRMeshLoad.h>
 #include <MRMesh/MRMeshSave.h>
-#include <MRMesh/MRMesh.h>
 #include <MRMesh/MRRegionBoundary.h>
 #include <MRMesh/MRNormalDenoising.h>
 #include <MRMesh/MRBox.h>
 #include <MRMesh/MRMeshFixer.h>
+#include "MRMesh/MRMeshFillHole.h"
+
 #include <iostream>
 #include <filesystem>
-
-#include "MRMesh/MRMeshFillHole.h"
+#include <optional>
 
 using namespace MR;
 
+class MeshLoader {
+public:
+    std::optional<MR::Mesh> Load(const std::string &path) const
+    {
+        return MeshLoad::fromAnySupportedFormat(path);
+    }
+};
+
+class MeshCleaner {
+public:
+    void RemoveDegenerateTriangles(MR::Mesh &mesh) const
+    {
+        fixMeshDegeneracies(mesh, {
+            .maxDeviation = 1e-5f * mesh.computeBoundingBox().diagonal(),
+            .tinyEdgeLength = 1e-3f,
+        });
+    }
+
+    void FillAllHoles(MR::Mesh &mesh) const
+    {
+        std::vector<EdgeId> holeEdges = mesh.topology.findHoleRepresentiveEdges();
+        for (EdgeId e : holeEdges)
+        {
+            FillHoleParams params;
+            params.metric = MR::getUniversalMetric(mesh);
+            fillHole(mesh, e, params);
+        }
+    }
+
+    void Cleanup(MR::Mesh &mesh) const
+    {
+        meshDenoiseViaNormals(mesh);
+    }
+};
+
+class MeshSaver {
+public:
+    bool Save(const MR::Mesh &mesh, const std::string &path) const
+    {
+        auto res = MeshSave::toAnySupportedFormat(mesh, path);
+        return res.has_value();
+    }
+};
+
 class MeshRepairer {
 public:
-    static bool repairSTLFile(const std::string& inputPath, const std::string& outputPath) {
-        std::cout << "Loading mesh from: " << inputPath << std::endl;
+    static bool repairSTLFile(const std::string &inputPath, const std::string &outputPath)
+    {
+        MeshRepairer repairer;
+        return repairer.repair(inputPath, outputPath);
+    }
 
-        // Load the STL file
-        auto meshResult = MeshLoad::fromAnySupportedFormat(inputPath);
-        if (!meshResult.has_value()) {
+    bool repair(const std::string &inputPath, const std::string &outputPath)
+    {
+        std::cout << "Loading mesh from: " << inputPath << std::endl;
+        auto meshOpt = loader_.Load(inputPath);
+        if (!meshOpt)
+        {
             std::cerr << "Failed to load STL file: " << inputPath << std::endl;
             return false;
         }
 
-        MR::Mesh mesh = std::move(meshResult.value());
+        MR::Mesh mesh = std::move(*meshOpt);
         std::cout << "Loaded mesh with " << mesh.topology.numValidFaces() << " faces" << std::endl;
 
-        // Step 1: Remove degenerate triangles
         std::cout << "Removing degenerate triangles..." << std::endl;
-        removeDegenerateTriangles(mesh);
+        cleaner_.RemoveDegenerateTriangles(mesh);
 
-        // Step 2: Fill holes to make mesh watertight
         std::cout << "Filling holes..." << std::endl;
-        fillAllHoles(mesh);
+        cleaner_.FillAllHoles(mesh);
 
-        // Step 3: Basic mesh cleanup
         std::cout << "Cleaning up mesh..." << std::endl;
-        cleanupMesh(mesh);
+        cleaner_.Cleanup(mesh);
 
-        // Save the repaired mesh
         std::cout << "Saving repaired mesh to: " << outputPath << std::endl;
-        auto saveResult = MeshSave::toAnySupportedFormat(mesh, outputPath);
-        if (!saveResult.has_value()) {
+        if (!saver_.Save(mesh, outputPath))
+        {
             std::cerr << "Failed to save repaired mesh" << std::endl;
             return false;
         }
 
         std::cout << "Mesh repair completed successfully!" << std::endl;
         std::cout << "Final mesh has " << mesh.topology.numValidFaces() << " faces" << std::endl;
-
         return true;
     }
 
 private:
-    static void removeDegenerateTriangles(MR::Mesh& mesh) {
-        fixMeshDegeneracies( mesh, {
-         .maxDeviation = 1e-5f * mesh.computeBoundingBox().diagonal(),
-         .tinyEdgeLength = 1e-3f,
-     } );
-    }
-
-    static void fillAllHoles(MR::Mesh& mesh) {
-
-        std::vector<EdgeId> holeEdges = mesh.topology.findHoleRepresentiveEdges();
-
-        for ( EdgeId e : holeEdges )
-            {
-            // Setup filling parameters
-            FillHoleParams params;
-            params.metric = MR::getUniversalMetric( mesh );
-            // Fill hole represented by `e`
-            fillHole( mesh, e, params );
-            }
-    }
-
-    static void cleanupMesh(MR::Mesh& mesh) {
-        meshDenoiseViaNormals( mesh );
-    }
+    MeshLoader  loader_;
+    MeshCleaner cleaner_;
+    MeshSaver   saver_;
 };
 
-
-
-#endif //MESHREPAIRER_H
