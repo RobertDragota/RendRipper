@@ -173,7 +173,7 @@ Application::Application(int w, int h, const char *title)
     try
         {
         renderer_ = std::make_unique<SceneRenderer>(
-            R"(D:\Licenta\RendRipper\Slicer\CuraEngine\build\Release\bambulab_a1mini.def.json)"); {
+            A1MINI_PRINTER_SETTINGS_FILE); {
             float halfX = renderer_->GetBedHalfWidth(); // e.g.  90.0f
             float halfY = renderer_->GetBedHalfDepth(); // e.g.  90.0f
             // No rotation, no scale—only translate the gizmo to the bed’s reference corner
