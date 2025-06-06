@@ -93,18 +93,18 @@ set_property(TARGET MeshLibAll PROPERTY
 
 # ────────────────────────────────────────────────────────────────────────────────
 # 12) Gather project sources
-file(GLOB_RECURSE SRC_FILES
-		"${SRC}/*.cpp"
-		"${SRC}/*.h"
+file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
+                "${SRC}/*.cpp"
+                "${SRC}/*.h"
 )
-file(GLOB_RECURSE IMGUI_FILES
-		"${IM_GUI_INCLUDE}/imgui.cpp"
-		"${IM_GUI_INCLUDE}/imgui_demo.cpp"
-		"${IM_GUI_INCLUDE}/imgui_draw.cpp"
-		"${IM_GUI_INCLUDE}/imgui_tables.cpp"
-		"${IM_GUI_INCLUDE}/imgui_widgets.cpp"
-		"${IM_GUI_BACKEND_INCLUDE}/imgui_impl_opengl3.cpp"
-		"${IM_GUI_BACKEND_INCLUDE}/imgui_impl_glfw.cpp"
+file(GLOB_RECURSE IMGUI_FILES CONFIGURE_DEPENDS
+                "${IM_GUI_INCLUDE}/imgui.cpp"
+                "${IM_GUI_INCLUDE}/imgui_demo.cpp"
+                "${IM_GUI_INCLUDE}/imgui_draw.cpp"
+                "${IM_GUI_INCLUDE}/imgui_tables.cpp"
+                "${IM_GUI_INCLUDE}/imgui_widgets.cpp"
+                "${IM_GUI_BACKEND_INCLUDE}/imgui_impl_opengl3.cpp"
+                "${IM_GUI_BACKEND_INCLUDE}/imgui_impl_glfw.cpp"
 )
 
 # Copy “resources” folder into the build directory
