@@ -38,9 +38,7 @@ private:
     void InitGLAD() const;
     void InitImGui() const;
     void MainLoop();
-    bool PickFace(const glm::vec3 &rayOrigin,
-                           const glm::vec3 &rayDirection,
-                           glm::vec3 &outFaceNormal);
+
     void Cleanup();
 
     GLFWwindow*                    window_    = nullptr;

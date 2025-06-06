@@ -6,53 +6,114 @@
 #include <stdexcept>
 #include <iostream> // For potential debug messages in hasUniform
 
-Shader::Shader(const char *vPath, const char *fPath) {
-    std::string vsCode = IO_utility::readFile(vPath);
-    std::string fsCode = IO_utility::readFile(fPath);
-    const char *vSrc = vsCode.c_str();
-    const char *fSrc = fsCode.c_str();
+Shader::Shader(const char *vPath, const char *fPath, const char* gPath) {
+    // 0) Parameter existence checks (no exceptions, just messages)
+    bool hasVertex   = (vPath != nullptr);
+    bool hasFragment = (fPath != nullptr);
+    bool hasGeometry = (gPath != nullptr);
 
-    unsigned int vsID = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vsID, 1, &vSrc, nullptr);
-    glCompileShader(vsID);
+    if (!hasVertex) {
+        std::cerr << "[Vertex shader] is not present\n";
+    }
+    if (!hasFragment) {
+        std::cerr << "[Fragment shader] is not present\n";
+    }
+    if (!hasGeometry) {
+        std::cerr << "[Geometry shader] is not present\n";
+    }
+
     int success;
     char infoLog[512];
-    glGetShaderiv(vsID, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(vsID, 512, nullptr, infoLog);
-        throw std::runtime_error(std::string("VERTEX SHADER ERROR (") + vPath + "):\n" + infoLog);
+
+    unsigned int vsID = 0, fsID = 0, gsID = 0;
+
+    // 1. Compile vertex shader (if provided)
+    if (hasVertex) {
+        std::string vsCode = IO_utility::readFile(vPath);
+        const char *vSrc = vsCode.c_str();
+        vsID = glCreateShader(GL_VERTEX_SHADER);
+        glShaderSource(vsID, 1, &vSrc, nullptr);
+        glCompileShader(vsID);
+        glGetShaderiv(vsID, GL_COMPILE_STATUS, &success);
+        if (!success) {
+            glGetShaderInfoLog(vsID, 512, nullptr, infoLog);
+            glDeleteShader(vsID);
+            throw std::runtime_error(std::string("VERTEX SHADER ERROR (") + vPath + "):\n" + infoLog);
+        }
     }
 
-    unsigned int fsID = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fsID, 1, &fSrc, nullptr);
-    glCompileShader(fsID);
-    glGetShaderiv(fsID, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(fsID, 512, nullptr, infoLog);
-        glDeleteShader(vsID); // Clean up vertex shader if fragment fails
-        throw std::runtime_error(std::string("FRAGMENT SHADER ERROR (") + fPath + "):\n" + infoLog);
+    // 2. Compile fragment shader (if provided)
+    if (hasFragment) {
+        std::string fsCode = IO_utility::readFile(fPath);
+        const char *fSrc = fsCode.c_str();
+        fsID = glCreateShader(GL_FRAGMENT_SHADER);
+        glShaderSource(fsID, 1, &fSrc, nullptr);
+        glCompileShader(fsID);
+        glGetShaderiv(fsID, GL_COMPILE_STATUS, &success);
+        if (!success) {
+            glGetShaderInfoLog(fsID, 512, nullptr, infoLog);
+            if (hasVertex) glDeleteShader(vsID);
+            glDeleteShader(fsID);
+            throw std::runtime_error(std::string("FRAGMENT SHADER ERROR (") + fPath + "):\n" + infoLog);
+        }
     }
 
+    // 3. Compile geometry shader (if provided)
+    if (hasGeometry) {
+        std::string gsCode = IO_utility::readFile(gPath);
+        const char *gSrc = gsCode.c_str();
+        gsID = glCreateShader(GL_GEOMETRY_SHADER);
+        glShaderSource(gsID, 1, &gSrc, nullptr);
+        glCompileShader(gsID);
+        glGetShaderiv(gsID, GL_COMPILE_STATUS, &success);
+        if (!success) {
+            glGetShaderInfoLog(gsID, 512, nullptr, infoLog);
+            if (hasVertex)   glDeleteShader(vsID);
+            if (hasFragment) glDeleteShader(fsID);
+            glDeleteShader(gsID);
+            throw std::runtime_error(std::string("GEOMETRY SHADER ERROR (") + gPath + "):\n" + infoLog);
+        }
+    }
+
+    // 4. Link shaders into program (attach only those that were compiled)
     ID = glCreateProgram();
-    glAttachShader(ID, vsID);
-    glAttachShader(ID, fsID);
+    if (hasVertex)   glAttachShader(ID, vsID);
+    if (hasGeometry) glAttachShader(ID, gsID);
+    if (hasFragment) glAttachShader(ID, fsID);
+
     glLinkProgram(ID);
     glGetProgramiv(ID, GL_LINK_STATUS, &success);
     if (!success) {
         glGetProgramInfoLog(ID, 512, nullptr, infoLog);
-        glDeleteShader(vsID); // Clean up shaders
-        glDeleteShader(fsID);
-        glDeleteProgram(ID); // Clean up program
-        ID = 0; // Mark as invalid
-        throw std::runtime_error(std::string("SHADER PROGRAM LINK ERROR (") + vPath + ", " + fPath + "):\n" + infoLog);
+        if (hasVertex)   glDeleteShader(vsID);
+        if (hasGeometry) glDeleteShader(gsID);
+        if (hasFragment) glDeleteShader(fsID);
+        glDeleteProgram(ID);
+        ID = 0;
+        throw std::runtime_error(
+            std::string("SHADER PROGRAM LINK ERROR (") +
+            (hasVertex ? std::string(vPath) : std::string("no-vertex")) + ", " +
+            (hasGeometry ? std::string(gPath) : std::string("no-geometry")) + ", " +
+            (hasFragment ? std::string(fPath) : std::string("no-fragment")) + "):\n" + infoLog
+        );
     }
 
-    // Shaders are linked into the program; they are no longer needed individually
-    glDetachShader(ID, vsID); // Detach before deleting is good practice, though not strictly required by all drivers
-    glDetachShader(ID, fsID);
-    glDeleteShader(vsID);
-    glDeleteShader(fsID);
+    // 5. Detach and delete individual shaders
+    if (hasVertex) {
+        glDetachShader(ID, vsID);
+        glDeleteShader(vsID);
+    }
+    if (hasGeometry) {
+        glDetachShader(ID, gsID);
+        glDeleteShader(gsID);
+    }
+    if (hasFragment) {
+        glDetachShader(ID, fsID);
+        glDeleteShader(fsID);
+    }
 }
+
+
 
 Shader::~Shader() {
     if (ID != 0) { // Check if ID is valid before deleting
@@ -138,6 +199,12 @@ void Shader::setInt(const std::string &n, int v) const {
 void Shader::setFloat(const std::string &n, float v) const {
     if (ID == 0) return;
     glUniform1f(getUniformLocation(n), v);
+}
+
+void Shader::setVec2(const std::string &name, const glm::vec2 &value) const
+{
+    if (ID == 0) return;
+    glUniform2fv(getUniformLocation(name), 1, glm::value_ptr(value));
 }
 
 void Shader::setMat4(const std::string &n, const glm::mat4 &m) const {

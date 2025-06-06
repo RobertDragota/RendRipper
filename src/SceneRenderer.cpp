@@ -380,7 +380,7 @@ void SceneRenderer::RenderGridAndVolume()
         }
     RenderAxes();
 
-    RenderGCodeUpToLayer(currentGCodeLayerIndex_);
+    //RenderGCodeUpToLayer(currentGCodeLayerIndex_);
 }
 
 void SceneRenderer::RenderAxes()

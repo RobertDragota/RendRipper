@@ -1015,109 +1015,7 @@ void Application::renderModels(glm::mat4 &)
         }
 }
 
-static bool RayIntersectsTriangle
-(
-    const glm::vec3 &orig,
-    const glm::vec3 &dir,
-    const glm::vec3 &v0,
-    const glm::vec3 &v1,
-    const glm::vec3 &v2,
-    float &outT,
-    float &outU,
-    float &outV
-)
-{
-    constexpr float kEpsilon = 1e-6f;
-    glm::vec3 edge1 = v1 - v0;
-    glm::vec3 edge2 = v2 - v0;
-    glm::vec3 pvec = glm::cross(dir, edge2);
-    float det = glm::dot(edge1, pvec);
-    if (fabs(det) < kEpsilon)
-        return false; // parallel
 
-    float invDet = 1.0f / det;
-    glm::vec3 tvec = orig - v0;
-    float u = glm::dot(tvec, pvec) * invDet;
-    if (u < 0.0f || u > 1.0f)
-        return false;
-
-    glm::vec3 qvec = glm::cross(tvec, edge1);
-    float v = glm::dot(dir, qvec) * invDet;
-    if (v < 0.0f || u + v > 1.0f)
-        return false;
-
-    float t = glm::dot(edge2, qvec) * invDet;
-    if (t < kEpsilon)
-        return false; // behind origin
-
-    outT = t;
-    outU = u;
-    outV = v;
-    return true;
-}
-
-bool Application::PickFace
-(
-    const glm::vec3 &rayOrigin,
-    const glm::vec3 &rayDirection,
-    glm::vec3 &outFaceNormal
-)
-{
-    if (activeModel_ < 0 || activeModel_ >= static_cast<int>(models_.size()))
-        return false;
-
-    Model &model = *models_[activeModel_];
-    Transform &xf = *modelTransformations_[activeModel_];
-
-    glm::mat4 modelMat = xf.getMatrix();
-
-    float closestT = std::numeric_limits<float>::max();
-    bool found = false;
-    glm::vec3 bestNormal(0.0f);
-
-    // Assumes Model stores all positions in a flat std::vector<glm::vec3> vertices
-    // and triangle indices in std::vector<unsigned> indices (3 per triangle).
-    const std::vector<glm::vec3> &verts = model.getAllPositions(); // flat list of all mesh vertices
-    // But since Model has multiple Meshes, we need to iterate per‐mesh below.
-    // Instead, we directly gather from each Mesh:
-    size_t baseVertex = 0;
-    for (const auto &mesh: model.getMeshes())
-        {
-        const auto &meshVerts = mesh.getVertices(); // std::vector<Vertex>, Vertex.pos is glm::vec3
-        const auto &meshIdxs = mesh.getIndices(); // std::vector<unsigned>
-        // Transform local‐space positions into world
-        for (size_t i = 0; i + 2 < meshIdxs.size(); i += 3)
-            {
-            unsigned i0 = meshIdxs[i + 0];
-            unsigned i1 = meshIdxs[i + 1];
-            unsigned i2 = meshIdxs[i + 2];
-            glm::vec3 v0 = glm::vec3(modelMat * glm::vec4(meshVerts[i0].pos, 1.0f));
-            glm::vec3 v1 = glm::vec3(modelMat * glm::vec4(meshVerts[i1].pos, 1.0f));
-            glm::vec3 v2 = glm::vec3(modelMat * glm::vec4(meshVerts[i2].pos, 1.0f));
-
-            float t, u, v;
-            if (RayIntersectsTriangle(rayOrigin, rayDirection, v0, v1, v2, t, u, v))
-                {
-                if (t < closestT)
-                    {
-                    closestT = t;
-                    found = true;
-                    glm::vec3 e1 = v1 - v0;
-                    glm::vec3 e2 = v2 - v0;
-                    bestNormal = glm::normalize(glm::cross(e1, e2));
-                    }
-                }
-            }
-        baseVertex += meshVerts.size();
-        }
-
-    if (found)
-        {
-        outFaceNormal = bestNormal;
-        return true;
-        }
-    return false;
-}
 
 void Application::MainLoop()
 {
@@ -1148,9 +1046,10 @@ void Application::MainLoop()
             if (renderer_)
                 {
                 renderer_->SetViewportSize(static_cast<int>(viewportSize.x), static_cast<int>(viewportSize.y));
-                renderer_->currentGCodeLayerIndex_ = this->currentGCodeLayer_;
+                //renderer_->currentGCodeLayerIndex_ = this->currentGCodeLayer_;
                 renderer_->BeginScene(viewMat, camWorldPos);
                 renderModels(viewMat);
+                renderer_->RenderGCodeUpToLayer(this->currentGCodeLayer_);
                 renderer_->EndScene();
                 GLuint texID = renderer_->GetSceneTexture();
                 ImGui::Image(texID, viewportSize, ImVec2(0, 1), ImVec2(1, 0));
