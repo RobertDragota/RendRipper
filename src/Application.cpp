@@ -10,6 +10,7 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <ImGuizmo.h>
+#include <filesystem>
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -358,6 +359,9 @@ void Application::showMenuBar()
                     }
                 });
             }
+            if (activeModel_ != -1 && ImGui::MenuItem("Slice Model")) {
+                sliceActiveModel();
+            }
             if (ImGui::MenuItem("Exit"))
                 {
                 glfwSetWindowShouldClose(window_, true);
@@ -639,6 +643,150 @@ void Application::showGenerationModal()
         }
 }
 
+void Application::showSlicingModal()
+{
+    if (slicing_.load())
+        {
+        ImGui::OpenPopup("Slicing Model");
+        slicing_.store(false);
+        }
+
+    ImGui::SetNextWindowSize(ImVec2(400, 350), ImGuiCond_Appearing);
+    ImGui::SetNextWindowPos(
+        ImGui::GetMainViewport()->GetCenter(),
+        ImGuiCond_Appearing, ImVec2(0.5f, 0.5f)
+    );
+
+    if (ImGui::BeginPopupModal("Slicing Model", nullptr,
+                               ImGuiWindowFlags_AlwaysAutoResize))
+        {
+
+        const char *prompt = "Please wait";
+        float ww = ImGui::GetWindowWidth();
+        float tw = ImGui::CalcTextSize(prompt).x;
+        ImGui::SetCursorPosX((ww - tw) * 0.5f);
+        ImGui::Text("%s", prompt);
+
+        ImGui::Spacing();
+        float fraction = slicingProgress_.load();
+        const float radius = 120.0f;
+        const float thickness = 8.0f;
+        ImU32 fg = IM_COL32(75, 175, 255, 255);
+        ImU32 bg = IM_COL32(60, 60, 60, 128);
+
+        ImGui::SetCursorPosX((ww - radius * 2.0f) * 0.5f);
+        ImGui::ProgressBar("##slice_progress",
+                           fraction,
+                           radius,
+                           thickness,
+                           fg,
+                           bg);
+
+        ImGui::Spacing();
+        {
+            std::lock_guard<std::mutex> lk(slicingMessageMutex_);
+            std::string msg = slicingMessage_;
+            float tw2 = ImGui::CalcTextSize(msg.c_str()).x;
+            ImGui::SetCursorPosX((ww - tw2) * 0.5f);
+            ImGui::Text("%s", msg.c_str());
+        }
+
+        if (slicingDone_.load())
+            {
+            ImGui::Spacing();
+            float bw = 120.0f;
+            ImGui::SetCursorPosX((ww - bw) * 0.5f);
+            if (ImGui::Button("Close", ImVec2(bw, 0)))
+                {
+                ImGui::CloseCurrentPopup();
+                slicingDone_.store(false);
+                }
+            }
+
+        ImGui::EndPopup();
+        }
+}
+
+void Application::sliceActiveModel()
+{
+    if (activeModel_ < 0 || activeModel_ >= static_cast<int>(loadedModelPaths_.size()))
+        return;
+
+    std::string stlPath = loadedModelPaths_[activeModel_];
+    slicing_.store(true);
+    slicingDone_.store(false);
+    slicingProgress_.store(0.0f);
+
+    std::thread([this, stlPath]()
+        {
+            std::filesystem::path model = std::filesystem::path("Slicer/model_settings.json");
+            if (!std::filesystem::exists(model))
+                {
+                std::lock_guard lk(slicingMessageMutex_);
+                slicingMessage_ = "model_settings.json not found.";
+                }
+
+            std::filesystem::path output = std::filesystem::path(stlPath).replace_extension(".gcode");
+            std::string cmd = std::string(CURA_ENGINE_EXE) +
+                              " slice -j fdmprinter.def.json -j bambulab_base.def.json -j bambulab_a1mini.def.json -j " + model.string() +
+                              " -l \"" + stlPath + "\"" +
+                              " -o \"" + output.string() + "\" 2>&1";
+
+#ifdef _WIN32
+            FILE *pipe = _popen(cmd.c_str(), "r");
+#else
+            FILE *pipe = popen(cmd.c_str(), "r");
+#endif
+            if (!pipe)
+                {
+                std::lock_guard lk(slicingMessageMutex_);
+                slicingMessage_ = "Failed to start CuraEngine.";
+                slicingDone_.store(true);
+                slicingProgress_.store(1.0f);
+                return;
+                }
+
+            char buffer[512];
+            while (fgets(buffer, sizeof(buffer), pipe))
+                {
+                std::string line(buffer);
+                if (!line.empty() && line.back() == '\n')
+                    line.pop_back();
+                {
+                    std::lock_guard lk(slicingMessageMutex_);
+                    slicingMessage_ = line;
+                }
+                }
+#ifdef _WIN32
+            int ret = _pclose(pipe);
+#else
+            int ret = pclose(pipe);
+#endif
+            {
+                std::lock_guard lk(slicingMessageMutex_);
+                slicingMessage_ = (ret == 0) ? "Slicing complete!" : ("Slicing failed (code " + std::to_string(ret) + ")");
+            }
+            slicingProgress_.store(1.0f);
+            slicingDone_.store(true);
+
+            if (ret == 0)
+                {
+                try
+                    {
+                    auto gm = std::make_shared<GCodeModel>(output.string());
+                    renderer_->SetGCodeModel(gm);
+                    gcodeModel_ = gm;
+                    currentGCodeLayer_ = -1;
+                    }
+                catch (const std::exception &e)
+                    {
+                    std::lock_guard lk(slicingMessageMutex_);
+                    slicingMessage_ += std::string(" | Load failed: ") + e.what();
+                    }
+                }
+        }).detach();
+}
+
 void Application::loadModel(std::string &modelPath)
 {
     try
@@ -654,6 +802,7 @@ void Application::loadModel(std::string &modelPath)
         glm::vec3 size = maxB - minB;
 
         loadedMeshDimensions_.push_back(size);
+        loadedModelPaths_.push_back(output);
 
         glm::vec3 oC = mPtr->center, oMin = mPtr->minBounds, oMax = mPtr->maxBounds;
         auto t = std::make_unique<Transform>();
@@ -701,6 +850,8 @@ void Application::UnloadModel(int idx)
     models_.erase(models_.begin() + idx);
     modelShaders_.erase(modelShaders_.begin() + idx);
     modelTransformations_.erase(modelTransformations_.begin() + idx);
+    loadedMeshDimensions_.erase(loadedMeshDimensions_.begin() + idx);
+    loadedModelPaths_.erase(loadedModelPaths_.begin() + idx);
     if (activeModel_ == idx)
         activeModel_ = -1;
     else if (activeModel_ > idx)
@@ -1032,6 +1183,7 @@ void Application::MainLoop()
         showMenuBar();
         openRenderScene();
         showGenerationModal();
+        showSlicingModal();
         showErrorModal(errorModalMessage_);
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));

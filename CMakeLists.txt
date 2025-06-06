@@ -150,8 +150,9 @@ target_include_directories(_CuraEngine INTERFACE
 target_compile_definitions(RendRipper PRIVATE
 		PYTHON_EXECUTABLE=\"${CMAKE_CURRENT_SOURCE_DIR}/3DModelGenerator/TripoSR/.venv/Scripts/python.exe\"
 		GENERATE_MODEL_SCRIPT=\"${CMAKE_CURRENT_SOURCE_DIR}/3DModelGenerator/TripoSR/run.py\"
-		OUTPUT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/resources/generated_models\"
-		MESHLIB_AVAILABLE
+                OUTPUT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/resources/generated_models\"
+                CURA_ENGINE_EXE=\"${CMAKE_CURRENT_SOURCE_DIR}/Slicer/CuraEngine/build/Release/CuraEngine.exe\"
+                MESHLIB_AVAILABLE
 )
 
 # ────────────────────────────────────────────────────────────────────────────────

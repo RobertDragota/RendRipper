@@ -18,6 +18,7 @@
 #include <glm/glm.hpp>
 #include <imgui.h>
 #include <mutex>
+#include <filesystem>
 #include "GizmoController.h"
 #include "SceneRenderer.h"
 #include "Shader.h"
@@ -63,6 +64,15 @@ private:
     std::mutex          generationMessageMutex_;
     std::atomic<float> progress_{0.0f};
 
+    // Slicing state
+    std::atomic<bool>   slicing_{false};
+    std::atomic<bool>   slicingDone_{false};
+    std::string         slicingMessage_;
+    std::mutex          slicingMessageMutex_;
+    std::atomic<float>  slicingProgress_{0.0f};
+
+    std::vector<std::string> loadedModelPaths_;
+
     std::unique_ptr<SceneRenderer> renderer_;
     GizmoController                gizmo_;
 
@@ -102,6 +112,9 @@ private:
 
 
     void showGenerationModal();
+    void showSlicingModal();
+
+    void sliceActiveModel();
 
     void showErrorModal(std::string &message);
 };
