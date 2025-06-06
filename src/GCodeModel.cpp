@@ -4,6 +4,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glad/glad.h>
 #include <cfloat>   // for FLT_MAX
+#include <algorithm>
+#include <cmath>
 
 GCodeModel::GCodeModel(const std::string& gcodePath) {
     parseGCode(gcodePath);
@@ -38,16 +40,48 @@ void GCodeModel::parseGCode(const std::string& path) {
     float lastExtrusion = 0.0f;
     float currentZ = 0.0f;
     int currentLayerIndex = -1;
+    glm::vec3 currentColor = kModelColor;
 
     // Look for either G0 or G1 commands (up until a ‘;’ comment)
     // We capture everything after the “G0 ” or “G1 ” prefix, ignoring trailing comments.
     std::regex moveRegex(R"(^(?:G0|G1)\s+([^;]*))");
 
     while (std::getline(in, line)) {
+        // Check for comments like ";TYPE:WALL" etc
+        std::string comment;
+        size_t semiPos = line.find(';');
+        if (semiPos != std::string::npos) {
+            comment = line.substr(semiPos + 1);
+        }
+
         std::smatch m;
         if (!std::regex_search(line, m, moveRegex)) {
             // Not a G0/G1 move or it's purely a comment
+            // Still check comment for TYPE to update currentColor
+            if (!comment.empty()) {
+                std::string upper = comment;
+                std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+                auto pos = upper.find("TYPE:");
+                if (pos != std::string::npos) {
+                    std::string type = upper.substr(pos + 5);
+                    if (type.find("SUPPORT") != std::string::npos) currentColor = kSupportColor;
+                    else if (type.find("FILL") != std::string::npos) currentColor = kInfillColor;
+                    else currentColor = kModelColor;
+                }
+            }
             continue;
+        }
+
+        if (!comment.empty()) {
+            std::string upper = comment;
+            std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+            auto pos = upper.find("TYPE:");
+            if (pos != std::string::npos) {
+                std::string type = upper.substr(pos + 5);
+                if (type.find("SUPPORT") != std::string::npos) currentColor = kSupportColor;
+                else if (type.find("FILL") != std::string::npos) currentColor = kInfillColor;
+                else currentColor = kModelColor;
+            }
         }
 
         // m[1] is the substring after “G0 ” or “G1 ” and before “;”
@@ -116,9 +150,14 @@ void GCodeModel::parseGCode(const std::string& path) {
                 layerZs_.push_back(currentPos.z);
                 layers_.emplace_back();
             }
-            // Add a pair of points (lastPos → currentPos) into layer currentLayerIndex
-            layers_[currentLayerIndex].push_back(lastPos);
-            layers_[currentLayerIndex].push_back(currentPos);
+            // Shade based on line direction and a simple light
+            glm::vec3 lightDir = glm::normalize(glm::vec3(0.5f, 0.5f, 1.0f));
+            glm::vec3 dir = glm::normalize(currentPos - lastPos);
+            float intensity = 0.6f + 0.4f * fabs(glm::dot(dir, lightDir));
+            glm::vec3 finalColor = currentColor * intensity;
+
+            layers_[currentLayerIndex].push_back({lastPos, finalColor});
+            layers_[currentLayerIndex].push_back({currentPos, finalColor});
         }
 
         // Update lastExtrusion and lastPos for the next iteration
@@ -135,8 +174,8 @@ void GCodeModel::computeBounds() {
     glm::vec3 mn( FLT_MAX ), mx( -FLT_MAX );
     for (const auto& layerVerts : layers_) {
         for (const auto& v : layerVerts) {
-            mn = glm::min(mn, v);
-            mx = glm::max(mx, v);
+            mn = glm::min(mn, v.pos);
+            mx = glm::max(mx, v.pos);
         }
     }
     if (layers_.empty()) {
@@ -165,12 +204,14 @@ void GCodeModel::uploadToGPU() {
         glBindVertexArray(vao);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glBufferData(GL_ARRAY_BUFFER,
-                     verts.size() * sizeof(glm::vec3),
+                     verts.size() * sizeof(ColoredVertex),
                      verts.data(),
                      GL_STATIC_DRAW);
-        // Only position → location = 0
+        // position → location = 0, color → location = 1
         glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ColoredVertex), (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(ColoredVertex), (void*)offsetof(ColoredVertex, color));
 
         glBindVertexArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, 0);

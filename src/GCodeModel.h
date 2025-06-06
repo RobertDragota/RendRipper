@@ -37,14 +37,23 @@ private:
     void computeBounds();
     void uploadToGPU();
 
+    static constexpr glm::vec3 kModelColor   = glm::vec3(0.8f, 0.8f, 0.8f);
+    static constexpr glm::vec3 kInfillColor  = glm::vec3(0.9f, 0.4f, 0.1f);
+    static constexpr glm::vec3 kSupportColor = glm::vec3(0.1f, 0.5f, 0.9f);
+
     // lineVertices_ is no longer used directly; we bucket segments into layers_.
     // We keep bounds of ALL points (regardless of layer) so that a “layer slider” scaled correctly if needed.
     glm::vec3 center_;
     float radius_;
 
-    // Each layer = a flat list of glm::vec3 (pairs = line segments).
+    struct ColoredVertex {
+        glm::vec3 pos;
+        glm::vec3 color;
+    };
+
+    // Each layer is now a flat list of ColoredVertex pairs forming line segments
     // layers_[i] = vertices for layer i, in consecutive pairs.
-    std::vector<std::vector<glm::vec3>> layers_;
+    std::vector<std::vector<ColoredVertex>> layers_;
     std::vector<float> layerZs_;
 
     // OpenGL handles: each layer gets its own VAO/VBO pair.
