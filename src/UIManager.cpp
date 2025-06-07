@@ -387,15 +387,20 @@ void UIManager::sliceActiveModel() {
         float offX = renderer_ ? renderer_->GetBedHalfWidth()  : 0.f;
         float offY = renderer_ ? renderer_->GetBedHalfDepth() : 0.f;
 
+        // Reload settings from disk before applying overrides
+        loadModelSettings();
+
         // Update mesh position overrides so slicing happens at the current model location
         try {
-            if (!modelSettingsLoaded_)
-                loadModelSettings();
-            if (auto tf = modelManager_.GetTransform(slicingModelIndex_)) {
-                modelSettings_["overrides"]["mesh_position_x"]["value"] = offX + tf->translation.x;
-                modelSettings_["overrides"]["mesh_position_y"]["value"] = offY + tf->translation.y;
+
+            if (modelSettingsLoaded_) {
+                if (auto tf = modelManager_.GetTransform(slicingModelIndex_)) {
+                    modelSettings_["overrides"]["mesh_position_x"]["value"] = offX + tf->translation.x;
+                    modelSettings_["overrides"]["mesh_position_y"]["value"] = offY + tf->translation.y;
+                }
+                saveModelSettings();
             }
-            saveModelSettings();
+
         } catch (const std::exception& e) {
             std::lock_guard lk(slicingMessageMutex_);
             slicingMessage_ = std::string("Failed to update model settings: ") + e.what();
@@ -556,6 +561,11 @@ void UIManager::openModelPropertiesDialog() {
 
     ImGui::Separator();
     if (ImGui::CollapsingHeader("Slicing Settings")) {
+
+        // Reload settings each time the header is opened to pick up external edits
+        if (!modelSettingsLoaded_)
+            loadModelSettings();
+
         if (!modelSettingsLoaded_) {
             ImGui::Text("model_settings.json not loaded");
         } else {
