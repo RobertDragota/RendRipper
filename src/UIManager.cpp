@@ -562,6 +562,7 @@ void UIManager::openModelPropertiesDialog() {
         } else {
             bool msChanged = false;
             auto& overrides = modelSettings_["overrides"];
+
             ImGuiTableFlags tFlags = ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchProp |
                                     ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV;
             if (ImGui::BeginTable("SliceSettingsTable", 2, tFlags)) {
