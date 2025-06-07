@@ -23,6 +23,12 @@ public:
     glm::vec3 GetDimensions(int index) const { return meshDimensions_[index]; }
     const std::string &GetPath(int index) const { return modelPaths_[index]; }
 
+    /// Return the world-space center of the model after transform
+    glm::vec3 GetWorldCenter(int index) const;
+
+    /// Check if the model fits within the given half-width/half-depth bed
+    bool FitsInBed(int index, float bedHalfX, float bedHalfY) const;
+
     void EnforceGridConstraint(int index);
     void UpdateDimensions(int index);
 
