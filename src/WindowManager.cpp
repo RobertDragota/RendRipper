@@ -9,12 +9,12 @@ static void ApplyModernDarkStyle() {
     ImVec4 bg_main_very_dark = ImVec4(0.09f, 0.09f, 0.09f, 1.00f);
     ImVec4 bg_main = ImVec4(0.118f, 0.118f, 0.118f, 1.00f);
     ImVec4 bg_secondary = ImVec4(0.145f, 0.145f, 0.149f, 1.00f);
-    ImVec4 bg_widget = ImVec4(0.200f, 0.200f, 0.200f, 1.00f);
+    ImVec4 bg_widget = ImVec4(0.220f, 0.220f, 0.220f, 1.00f);
     ImVec4 text_main = ImVec4(0.86f, 0.86f, 0.86f, 1.00f);
     ImVec4 text_disabled = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
-    ImVec4 accent_main = ImVec4(0.000f, 0.478f, 0.800f, 1.00f);
-    ImVec4 accent_hover = ImVec4(0.100f, 0.578f, 0.900f, 1.00f);
-    ImVec4 accent_active = ImVec4(0.000f, 0.361f, 0.600f, 1.00f);
+    ImVec4 accent_main = ImVec4(0.200f, 0.550f, 0.900f, 1.00f);
+    ImVec4 accent_hover = ImVec4(0.300f, 0.650f, 1.000f, 1.00f);
+    ImVec4 accent_active = ImVec4(0.100f, 0.450f, 0.800f, 1.00f);
     ImVec4 border_main = ImVec4(0.220f, 0.220f, 0.220f, 1.00f);
     ImVec4 border_light = ImVec4(0.27f, 0.27f, 0.27f, 1.00f);
     style.WindowPadding = ImVec2(8.0f, 8.0f);
@@ -145,7 +145,17 @@ void WindowManager::InitGLAD() {
 void WindowManager::InitImGui() {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+    io.Fonts->AddFontDefault();
+    io.Fonts->AddFontFromFileTTF("assets/fonts/Orbitron-Bold.ttf", 16.0f);
     ApplyModernDarkStyle();
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+        ImGuiStyle& style = ImGui::GetStyle();
+        style.WindowRounding = 5.0f;
+        style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+    }
     ImGui_ImplGlfw_InitForOpenGL(window_, true);
     ImGui_ImplOpenGL3_Init("#version 330 core");
 }
