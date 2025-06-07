@@ -10,6 +10,15 @@ int ModelManager::LoadModel(const std::string &modelPath) {
     auto mPtr = std::make_unique<Model>(output);
     mPtr->computeBounds();
     glm::vec3 size = mPtr->maxBounds - mPtr->minBounds;
+
+    float maxDim = glm::max(size.x, glm::max(size.y, size.z));
+    float scaleFactor = 1.0f;
+    if (maxDim > 0.01f && maxDim <= 1.0f)
+        scaleFactor = 100.0f;
+    else if (maxDim > 1.0f && maxDim <= 10.0f)
+        scaleFactor = 10.0f;
+
+    size *= scaleFactor;
     meshDimensions_.push_back(size);
     modelPaths_.push_back(output);
 
@@ -27,8 +36,10 @@ int ModelManager::LoadModel(const std::string &modelPath) {
     float minZ = corners[0].z;
     for (int i = 1; i < 8; ++i) minZ = std::min(minZ, corners[i].z);
     glm::vec3 c = mPtr->center;
-    t->translation = glm::vec3(-c.x, -c.y, -minZ);
-    t->scale = glm::vec3(1.0f);
+    t->translation = glm::vec3(-scaleFactor * c.x,
+                               -scaleFactor * c.y,
+                               -scaleFactor * minZ);
+    t->scale = glm::vec3(scaleFactor);
     t->rotationQuat = glm::quat(1,0,0,0);
     transforms_.push_back(std::move(t));
     shaders_.emplace_back(std::make_unique<Shader>("../../resources/shaders/model_shader.vert",
@@ -73,4 +84,11 @@ void ModelManager::EnforceGridConstraint(int index) {
         float offsetNeeded = groundPlaneZ - minZ;
         transform.translation.z += offsetNeeded;
     }
+}
+
+void ModelManager::UpdateDimensions(int index) {
+    if (index < 0 || index >= static_cast<int>(models_.size())) return;
+    glm::vec3 base = models_[index]->maxBounds - models_[index]->minBounds;
+    glm::vec3 sc = transforms_[index]->scale;
+    meshDimensions_[index] = base * sc;
 }

@@ -22,6 +22,7 @@ public:
     const std::string &GetPath(int index) const { return modelPaths_[index]; }
 
     void EnforceGridConstraint(int index);
+    void UpdateDimensions(int index);
 
 private:
     std::vector<std::unique_ptr<Shader>> shaders_;
