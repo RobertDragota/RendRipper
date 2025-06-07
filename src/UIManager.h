@@ -6,6 +6,9 @@
 #include <filesystem>
 #include <imgui.h>
 #include <ImGuizmo.h>
+#ifndef GLFW_INCLUDE_NONE
+#define GLFW_INCLUDE_NONE
+#endif
 #include <GLFW/glfw3.h>
 #include "ModelManager.h"
 #include "SceneRenderer.h"
