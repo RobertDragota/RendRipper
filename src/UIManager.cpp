@@ -17,13 +17,17 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <filesystem>
 #include <iostream>
+#include <functional>
 #include <limits>
 #include <thread>
 #include <regex>
 #include <cstdio>
+#include <cstring>
 #include <nlohmann/json.hpp>
 
 #include "glm/gtx/intersect.hpp"
+
+using json = nlohmann::json;
 
 // Utility: ray-sphere intersection using GLM helpers
 static bool RayIntersectSphere(const glm::vec3& origin,
@@ -40,7 +44,10 @@ static bool RayIntersectSphere(const glm::vec3& origin,
 UIManager::UIManager(ModelManager& mm, SceneRenderer* renderer,
                      GizmoController& gizmo, CameraController& camera,
                      GLFWwindow* window)
-    : modelManager_(mm), renderer_(renderer), gizmo_(gizmo), camera_(camera), window_(window) {}
+    : modelManager_(mm), renderer_(renderer), gizmo_(gizmo), camera_(camera), window_(window)
+{
+    loadModelSettings();
+}
 
 void UIManager::Frame() {
     ImGuizmo::BeginFrame();
@@ -368,6 +375,9 @@ void UIManager::sliceActiveModel() {
     slicingDone_.store(false);
     slicingProgress_.store(0.0f);
 
+    // Ensure any pending changes in the UI are written to disk
+    saveModelSettings();
+
     std::thread([this]() {
         if (!std::filesystem::exists(MODEL_SETTINGS_FILE)) {
             std::lock_guard lk(slicingMessageMutex_);
@@ -377,19 +387,18 @@ void UIManager::sliceActiveModel() {
         float offX = renderer_ ? renderer_->GetBedHalfWidth()  : 0.f;
         float offY = renderer_ ? renderer_->GetBedHalfDepth() : 0.f;
 
+        // Reload settings from disk before applying overrides
+        loadModelSettings();
+
         // Update mesh position overrides so slicing happens at the current model location
         try {
-            nlohmann::json mj;
-            {
-                std::ifstream in(MODEL_SETTINGS_FILE);
-                in >> mj;
+            if (modelSettingsLoaded_) {
+                if (auto tf = modelManager_.GetTransform(slicingModelIndex_)) {
+                    modelSettings_["overrides"]["mesh_position_x"]["value"] = offX + tf->translation.x;
+                    modelSettings_["overrides"]["mesh_position_y"]["value"] = offY + tf->translation.y;
+                }
+                saveModelSettings();
             }
-            if (auto tf = modelManager_.GetTransform(slicingModelIndex_)) {
-                mj["overrides"]["mesh_position_x"]["value"] = offX + tf->translation.x;
-                mj["overrides"]["mesh_position_y"]["value"] = offY + tf->translation.y;
-            }
-            std::ofstream out(MODEL_SETTINGS_FILE);
-            out << mj.dump(4);
         } catch (const std::exception& e) {
             std::lock_guard lk(slicingMessageMutex_);
             slicingMessage_ = std::string("Failed to update model settings: ") + e.what();
@@ -547,6 +556,74 @@ void UIManager::openModelPropertiesDialog() {
     } else {
         ImGui::Text("No model selected.");
     }
+
+    ImGui::Separator();
+    if (ImGui::CollapsingHeader("Slicing Settings")) {
+        // Reload settings each time the header is opened to pick up external edits
+        if (!modelSettingsLoaded_)
+            loadModelSettings();
+        if (!modelSettingsLoaded_) {
+            ImGui::Text("model_settings.json not loaded");
+        } else {
+            bool msChanged = false;
+            auto& overrides = modelSettings_["overrides"];
+            ImGuiTableFlags tFlags = ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchProp |
+                                    ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV;
+            if (ImGui::BeginTable("SliceSettingsTable", 2, tFlags)) {
+                ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthStretch, 0.6f);
+                ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch, 0.4f);
+                ImGui::TableHeadersRow();
+                for (auto it = overrides.begin(); it != overrides.end(); ++it) {
+                    auto& entry = it.value();
+                    if (!entry.contains("value")) continue;
+                    const std::string key = it.key();
+                    auto& val = entry["value"];
+                    ImGui::PushID(key.c_str());
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::TextUnformatted(key.c_str());
+                    ImGui::TableSetColumnIndex(1);
+                    ImGui::SetNextItemWidth(-FLT_MIN);
+                    if (val.is_boolean()) {
+                        bool b = val.get<bool>();
+                        if (ImGui::Checkbox("##v", &b)) { val = b; msChanged = true; }
+                    } else if (val.is_number_integer()) {
+                        int v = val.get<int>();
+                        if (ImGui::InputInt("##v", &v)) { val = v; msChanged = true; }
+                    } else if (val.is_number_float()) {
+                        double v = val.get<double>();
+                        if (ImGui::InputDouble("##v", &v)) { val = v; msChanged = true; }
+                    } else if (val.is_string()) {
+                        std::string s = val.get<std::string>();
+                        auto optIt = enumOptions_.find(key);
+                        if (optIt != enumOptions_.end() && !optIt->second.empty()) {
+                            int current = 0;
+                            for (size_t i=0;i<optIt->second.size();++i)
+                                if (optIt->second[i] == s) current = static_cast<int>(i);
+                            if (ImGui::BeginCombo("##combo", optIt->second[current].c_str())) {
+                                for (size_t i=0;i<optIt->second.size();++i) {
+                                    bool selected = (current==static_cast<int>(i));
+                                    if (ImGui::Selectable(optIt->second[i].c_str(), selected)) {
+                                        current = static_cast<int>(i); msChanged = true; s = optIt->second[i];
+                                    }
+                                    if (selected) ImGui::SetItemDefaultFocus();
+                                }
+                                ImGui::EndCombo();
+                            }
+                        } else {
+                            char buf[128];
+                            strncpy(buf, s.c_str(), sizeof(buf)); buf[sizeof(buf)-1] = '\0';
+                            if (ImGui::InputText("##v", buf, sizeof(buf))) { s = buf; msChanged = true; }
+                        }
+                        val = s;
+                    }
+                    ImGui::PopID();
+                }
+                ImGui::EndTable();
+            }
+            if (msChanged) saveModelSettings();
+        }
+    }
     if (gcodeModel_) {
         int layerCount = gcodeModel_->GetLayerCount();
         auto layerHeights = gcodeModel_->GetLayerHeights();
@@ -633,6 +710,49 @@ void UIManager::finalizeSlicing() {
     } catch (const std::exception &e) {
         std::lock_guard lk(slicingMessageMutex_);
         slicingMessage_ += std::string(" | Load failed: ") + e.what();
+    }
+}
+
+void UIManager::loadModelSettings() {
+    try {
+        std::ifstream in(MODEL_SETTINGS_FILE);
+        if (in.is_open()) {
+            in >> modelSettings_;
+            modelSettingsLoaded_ = true;
+        }
+        // Load enum options from primitive printer settings for dropdowns
+        std::ifstream printerIn(PRIMITIVE_PRINTER_SETTINGS_FILE);
+        if (printerIn.is_open()) {
+            json pj; printerIn >> pj;
+            if (pj.contains("settings")) {
+                std::function<void(const json&)> recur = [&](const json& node){
+                    for (auto it = node.begin(); it != node.end(); ++it) {
+                        if (!it->is_object()) continue;
+                        const json& obj = *it;
+                        if (obj.contains("type") && obj["type"] == "enum" && obj.contains("options")) {
+                            std::vector<std::string> opts;
+                            for (auto& op : obj["options"].items()) opts.push_back(op.key());
+                            enumOptions_[it.key()] = opts;
+                        }
+                        if (obj.contains("children")) recur(obj["children"]);
+                    }
+                };
+                recur(pj["settings"]);
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to load model settings: " << e.what() << std::endl;
+        modelSettingsLoaded_ = false;
+    }
+}
+
+void UIManager::saveModelSettings() {
+    if (!modelSettingsLoaded_) return;
+    try {
+        std::ofstream out(MODEL_SETTINGS_FILE);
+        out << modelSettings_.dump(4);
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to save model settings: " << e.what() << std::endl;
     }
 }
 

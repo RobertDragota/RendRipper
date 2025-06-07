@@ -60,6 +60,26 @@
         "mesh_position_y": {
             "value": 0.0,
             "default_value": 0
+        },
+        "infill_sparse_density": {
+            "value": 20,
+            "default_value": 20
+        },
+        "infill_pattern": {
+            "value": "grid",
+            "default_value": "grid"
+        },
+        "infill_line_width": {
+            "value": 0.4,
+            "default_value": 0.4
+        },
+        "infill_sparse_thickness": {
+            "value": 0.1,
+            "default_value": 0.1
+        },
+        "infill_support_enabled": {
+            "value": false,
+            "default_value": false
         }
     }
 }
