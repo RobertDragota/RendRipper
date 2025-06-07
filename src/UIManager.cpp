@@ -303,6 +303,10 @@ void UIManager::showGenerationModal() {
 }
 
 void UIManager::showSlicingModal() {
+    if (loadGcodePending_.load()) {
+        finalizeSlicing();
+        loadGcodePending_.store(false);
+    }
     if (slicing_.load()) {
         ImGui::OpenPopup("Slicing Model");
         slicing_.store(false);
@@ -348,27 +352,30 @@ void UIManager::showSlicingModal() {
 void UIManager::sliceActiveModel() {
     if (activeModel_ < 0 || activeModel_ >= static_cast<int>(modelManager_.Count()))
         return;
-    std::string stlPath = modelManager_.GetPath(activeModel_);
+
+    slicingModelIndex_ = activeModel_;
+    pendingStlPath_ = modelManager_.GetPath(activeModel_);
+    std::filesystem::path base(pendingStlPath_);
+    std::string name = base.stem().string();
+    pendingResizedPath_ = (std::filesystem::path(GCODE_OUTPUT_DIR) / (name + "_resized.stl")).string();
+    pendingGcodePath_ = (std::filesystem::path(GCODE_OUTPUT_DIR) / (name + ".gcode")).string();
+
     slicing_.store(true);
     slicingDone_.store(false);
     slicingProgress_.store(0.0f);
-    int modelIndex = activeModel_;
-    std::thread([this, stlPath, modelIndex]() {
+
+    std::thread([this]() {
         if (!std::filesystem::exists(MODEL_SETTINGS_FILE)) {
             std::lock_guard lk(slicingMessageMutex_);
             slicingMessage_ = "model_settings.json not found.";
         }
-        std::filesystem::path base(stlPath);
-        std::string name = base.stem().string();
-        std::filesystem::path resized = std::filesystem::path(GCODE_OUTPUT_DIR) / (name + "_resized.stl");
-        modelManager_.ExportTransformedModel(modelIndex, resized.string());
-        std::filesystem::path output = std::filesystem::path(GCODE_OUTPUT_DIR) / (name + ".gcode");
+        modelManager_.ExportTransformedModel(slicingModelIndex_, pendingResizedPath_);
         std::string cmd = std::string(CURA_ENGINE_EXE) +
                           " slice -j " + std::string(PRIMITIVE_PRINTER_SETTINGS_FILE) + " -j " +
                           std::string(BASE_PRINTER_SETTINGS_FILE) + " -j " + std::string(A1MINI_PRINTER_SETTINGS_FILE) +
                           " -j " + std::string(MODEL_SETTINGS_FILE) +
-                          " -l \"" + resized.string() + "\"" +
-                          " -o \"" + output.string() + "\"";
+                          " -l \"" + pendingResizedPath_ + "\"" +
+                          " -o \"" + pendingGcodePath_ + "\"";
         std::cout << cmd;
 #ifdef _WIN32
         FILE* pipe = _popen(cmd.c_str(), "r");
@@ -410,19 +417,7 @@ void UIManager::sliceActiveModel() {
         slicingProgress_.store(1.0f);
         slicingDone_.store(true);
         if (ret == 0) {
-            try {
-                auto gm = std::make_shared<GCodeModel>(output.string());
-                renderer_->SetGCodeModel(gm);
-                gcodeModel_ = gm;
-                currentGCodeLayer_ = -1;
-                UnloadModel(modelIndex);
-                std::filesystem::remove(resized);
-                std::filesystem::remove(stlPath);
-                std::filesystem::remove_all(std::string(OUTPUT_DIR));
-            } catch (const std::exception& e) {
-                std::lock_guard lk(slicingMessageMutex_);
-                slicingMessage_ += std::string(" | Load failed: ") + e.what();
-            }
+            loadGcodePending_.store(true);
         }
     }).detach();
 }
@@ -587,6 +582,22 @@ void UIManager::renderModels(glm::mat4&) {
         if (m && sh && t && renderer_ && sh->ID != 0) {
             renderer_->RenderModel(*m,*sh,*t);
         }
+    }
+}
+
+void UIManager::finalizeSlicing() {
+    try {
+        auto gm = std::make_shared<GCodeModel>(pendingGcodePath_);
+        if (renderer_) renderer_->SetGCodeModel(gm);
+        gcodeModel_ = gm;
+        currentGCodeLayer_ = -1;
+        UnloadModel(slicingModelIndex_);
+        std::filesystem::remove(pendingResizedPath_);
+        std::filesystem::remove(pendingStlPath_);
+        std::filesystem::remove_all(std::string(OUTPUT_DIR));
+    } catch (const std::exception &e) {
+        std::lock_guard lk(slicingMessageMutex_);
+        slicingMessage_ += std::string(" | Load failed: ") + e.what();
     }
 }
 
