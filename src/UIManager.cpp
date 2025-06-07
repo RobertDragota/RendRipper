@@ -379,8 +379,6 @@ void UIManager::sliceActiveModel() {
                           " slice -j " + std::string(PRIMITIVE_PRINTER_SETTINGS_FILE) + " -j " +
                           std::string(BASE_PRINTER_SETTINGS_FILE) + " -j " + std::string(A1MINI_PRINTER_SETTINGS_FILE) +
                           " -j " + std::string(MODEL_SETTINGS_FILE) +
-                          " -s mesh_position_x=" + std::to_string(offX) +
-                          " -s mesh_position_y=" + std::to_string(offY) +
                           " -l \"" + pendingResizedPath_ + "\"" +
                           " -o \"" + pendingGcodePath_ + "\"";
         std::cout << cmd;
