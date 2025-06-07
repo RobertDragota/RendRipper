@@ -151,19 +151,12 @@ void WindowManager::InitImGui() {
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
     io.Fonts->AddFontDefault();
-    const char* fontRel = "assets/fonts/Orbitron-Bold.ttf";
-    std::vector<std::string> search{
-        fontRel,
-        std::string("../") + fontRel,
-        std::string("../../") + fontRel
-    };
+    const char* fontRel = "../assets/fonts/Orbitron-Bold.ttf";
+
     ImFont* orbitron = nullptr;
-    for (const auto& p : search) {
-        if (std::filesystem::exists(p)) {
-            orbitron = io.Fonts->AddFontFromFileTTF(p.c_str(), 16.0f);
-            if (orbitron) break;
-        }
-    }
+
+    orbitron = io.Fonts->AddFontFromFileTTF(fontRel, 16.0f);
+
     if (orbitron) io.FontDefault = orbitron;
     ApplyModernDarkStyle();
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
