@@ -96,6 +96,7 @@ void UIManager::Frame() {
         );
         if (ImGuizmo::IsUsing()) {
             modelManager_.EnforceGridConstraint(activeModel_);
+            modelManager_.UpdateDimensions(activeModel_);
         }
     }
     ImGui::End();
@@ -469,6 +470,7 @@ void UIManager::openModelPropertiesDialog() {
         }
         if (changed) {
             modelManager_.EnforceGridConstraint(activeModel_);
+            modelManager_.UpdateDimensions(activeModel_);
         }
         ImGui::Separator();
         if (ImGui::Button("Reset Transform")) {
@@ -491,6 +493,7 @@ void UIManager::openModelPropertiesDialog() {
             tf.translation = glm::vec3(-centerRot.x,-centerRot.y,-newMin.z);
             tf.scale = glm::vec3(1.0f);
             modelManager_.EnforceGridConstraint(activeModel_);
+            modelManager_.UpdateDimensions(activeModel_);
         }
         ImGui::SameLine();
         if (ImGui::Button("Unload Model")) {
