@@ -395,8 +395,12 @@ void UIManager::sliceActiveModel() {
 
             if (modelSettingsLoaded_) {
                 if (auto tf = modelManager_.GetTransform(slicingModelIndex_)) {
-                    modelSettings_["overrides"]["mesh_position_x"]["value"] = offX + tf->translation.x;
-                    modelSettings_["overrides"]["mesh_position_y"]["value"] = offY + tf->translation.y;
+                    double mx = offX + tf->translation.x;
+                    double my = offY + tf->translation.y;
+                    modelSettings_["overrides"]["mesh_position_x"]["value"] = mx;
+                    modelSettings_["overrides"]["mesh_position_x"]["default_value"] = mx;
+                    modelSettings_["overrides"]["mesh_position_y"]["value"] = my;
+                    modelSettings_["overrides"]["mesh_position_y"]["default_value"] = my;
                 }
                 saveModelSettings();
             }
@@ -588,15 +592,17 @@ void UIManager::openModelPropertiesDialog() {
                     ImGui::TextUnformatted(key.c_str());
                     ImGui::TableSetColumnIndex(1);
                     ImGui::SetNextItemWidth(-FLT_MIN);
+
+                    auto& def = entry["default_value"];
                     if (val.is_boolean()) {
                         bool b = val.get<bool>();
-                        if (ImGui::Checkbox("##v", &b)) { val = b; msChanged = true; }
+                        if (ImGui::Checkbox("##v", &b)) { val = b; def = b; msChanged = true; }
                     } else if (val.is_number_integer()) {
                         int v = val.get<int>();
-                        if (ImGui::InputInt("##v", &v)) { val = v; msChanged = true; }
+                        if (ImGui::InputInt("##v", &v)) { val = v; def = v; msChanged = true; }
                     } else if (val.is_number_float()) {
                         double v = val.get<double>();
-                        if (ImGui::InputDouble("##v", &v)) { val = v; msChanged = true; }
+                        if (ImGui::InputDouble("##v", &v)) { val = v; def = v; msChanged = true; }
                     } else if (val.is_string()) {
                         std::string s = val.get<std::string>();
                         auto optIt = enumOptions_.find(key);
@@ -620,6 +626,9 @@ void UIManager::openModelPropertiesDialog() {
                             if (ImGui::InputText("##v", buf, sizeof(buf))) { s = buf; msChanged = true; }
                         }
                         val = s;
+
+                        def = s;
+
                     }
                     ImGui::PopID();
                 }
