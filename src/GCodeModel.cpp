@@ -53,6 +53,8 @@ void GCodeModel::computeBounds() {
         radius_ = 0.0f;
         return;
     }
+    boundsMin_ = mn;
+    boundsMax_ = mx;
     center_ = (mn + mx) * 0.5f;
     radius_ = glm::length(mx - center_) * 0.5f;
 }
