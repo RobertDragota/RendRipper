@@ -4,10 +4,10 @@
 #include <string>
 #include <vector>
 #include <glm/glm.hpp>
+#include "Model.h"
+#include "Shader.h"
+#include "Transform.h"
 
-class Shader;
-class Model;
-struct Transform;
 
 class ModelManager {
 public:

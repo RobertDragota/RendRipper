@@ -22,7 +22,7 @@ ShaderModule::ShaderModule(GLenum type, const std::string &source)
 ShaderModule ShaderModule::FromFile(GLenum type, const std::string &path)
 {
     std::string code = IO_utility::FileIO::ReadTextFile(path);
-    return ShaderModule(type, code);
+    return {type, code};
 }
 
 ShaderModule::~ShaderModule()

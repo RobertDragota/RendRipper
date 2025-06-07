@@ -1,6 +1,8 @@
 #include "ModelManager.h"
 #include <algorithm>
 
+#include "MeshRepairer.h"
+
 int ModelManager::LoadModel(const std::string &modelPath) {
     std::string directory = modelPath.substr(0, modelPath.find_last_of("/\\"));
     std::string output = directory + "/output.stl";
