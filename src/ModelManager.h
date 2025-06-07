@@ -14,6 +14,8 @@ public:
     int LoadModel(const std::string &modelPath);
     void UnloadModel(int index);
 
+    void ExportTransformedModel(int index, const std::string &outPath) const;
+
     size_t Count() const { return models_.size(); }
     Model* GetModel(int index) { return index>=0 && index<(int)models_.size()? models_[index].get():nullptr; }
     Shader* GetShader(int index) { return index>=0 && index<(int)shaders_.size()? shaders_[index].get():nullptr; }

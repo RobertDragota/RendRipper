@@ -1,5 +1,7 @@
 #include "ModelManager.h"
 #include <algorithm>
+#include <fstream>
+#include <vector>
 
 #include "MeshRepairer.h"
 
@@ -92,4 +94,39 @@ void ModelManager::UpdateDimensions(int index) {
     glm::vec3 base = models_[index]->maxBounds - models_[index]->minBounds;
     glm::vec3 sc = transforms_[index]->scale;
     meshDimensions_[index] = base * sc;
+}
+
+void ModelManager::ExportTransformedModel(int index, const std::string &outPath) const {
+    if (index < 0 || index >= static_cast<int>(models_.size())) return;
+    const Model &model = *models_[index];
+    const Transform &tf = *transforms_[index];
+    glm::mat4 mat = tf.getMatrix();
+
+    struct Tri { glm::vec3 v0, v1, v2; };
+    std::vector<Tri> tris;
+    for (const auto &mesh : model.getMeshes()) {
+        const auto &verts = mesh.getVertices();
+        const auto &idxs = mesh.getIndices();
+        for (size_t i = 0; i + 2 < idxs.size(); i += 3) {
+            glm::vec3 p0 = glm::vec3(mat * glm::vec4(verts[idxs[i]].pos, 1.f));
+            glm::vec3 p1 = glm::vec3(mat * glm::vec4(verts[idxs[i+1]].pos, 1.f));
+            glm::vec3 p2 = glm::vec3(mat * glm::vec4(verts[idxs[i+2]].pos, 1.f));
+            tris.push_back({p0, p1, p2});
+        }
+    }
+
+    std::ofstream out(outPath, std::ios::binary);
+    char header[80] = {0};
+    out.write(header, 80);
+    uint32_t count = static_cast<uint32_t>(tris.size());
+    out.write(reinterpret_cast<const char*>(&count), sizeof(uint32_t));
+    for (const auto &t : tris) {
+        glm::vec3 normal = glm::normalize(glm::cross(t.v1 - t.v0, t.v2 - t.v0));
+        out.write(reinterpret_cast<const char*>(&normal), sizeof(glm::vec3));
+        out.write(reinterpret_cast<const char*>(&t.v0), sizeof(glm::vec3));
+        out.write(reinterpret_cast<const char*>(&t.v1), sizeof(glm::vec3));
+        out.write(reinterpret_cast<const char*>(&t.v2), sizeof(glm::vec3));
+        uint16_t attr = 0;
+        out.write(reinterpret_cast<const char*>(&attr), sizeof(uint16_t));
+    }
 }
