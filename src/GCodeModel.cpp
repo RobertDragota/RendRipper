@@ -16,6 +16,12 @@ GCodeModel::GCodeModel(const std::string& gcodePath) {
         computeBounds();
         GCodeUploader uploader;
         uploader.Upload(layers_, layerVAOs_, layerVBOs_);
+        layerVertexCounts_.reserve(layers_.size());
+        for (const auto& layer : layers_) {
+            layerVertexCounts_.push_back(layer.size());
+        }
+        std::vector<std::vector<ColoredVertex>>().swap(layers_);
+        layerZs_.shrink_to_fit();
         ready_ = true;
     } else {
         std::cerr << "Warning: GCodeModel loaded no extruding moves from " << gcodePath << std::endl;
@@ -55,10 +61,9 @@ void GCodeModel::computeBounds() {
 // Draw a single layer index. Returns false if invalid index or not ready.
 bool GCodeModel::DrawLayer(int layerIndex, Shader& lineShader) const {
     if (!ready_) return false;
-    if (layerIndex < 0 || layerIndex >= static_cast<int>(layers_.size()))
+    if (layerIndex < 0 || layerIndex >= static_cast<int>(layerVertexCounts_.size()))
         return false;
-    const auto& verts = layers_[layerIndex];
-    if (verts.empty())
+    if (layerVertexCounts_[layerIndex] == 0)
         return false;
 
     lineShader.use();
@@ -71,8 +76,7 @@ bool GCodeModel::DrawLayer(int layerIndex, Shader& lineShader) const {
 
     glBindVertexArray(layerVAOs_[layerIndex]);
     glLineWidth(2.0f);
-    // Each layer has exactly (layers_[i].size()/2) segments → so total vertices = layers_[i].size()
-    glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(layers_[layerIndex].size()));
+    glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(layerVertexCounts_[layerIndex]));
     glLineWidth(1.0f);
     glBindVertexArray(0);
     return true;
@@ -82,7 +86,7 @@ bool GCodeModel::DrawLayer(int layerIndex, Shader& lineShader) const {
 void GCodeModel::DrawUpToLayer(int maxLayerIndex, Shader& lineShader) const {
     if (!ready_) return;
 
-    int layerCount = static_cast<int>(layers_.size());
+    int layerCount = static_cast<int>(layerVertexCounts_.size());
     int end = (maxLayerIndex < 0 || maxLayerIndex >= layerCount) ? (layerCount - 1) : maxLayerIndex;
 
     lineShader.use();
@@ -92,11 +96,10 @@ void GCodeModel::DrawUpToLayer(int maxLayerIndex, Shader& lineShader) const {
     }
 
     for (int i = 0; i <= end; ++i) {
-        const auto& verts = layers_[i];
-        if (verts.empty()) continue;
+        if (layerVertexCounts_[i] == 0) continue;
         glBindVertexArray(layerVAOs_[i]);
         glLineWidth(2.0f);
-        glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(verts.size()));
+        glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(layerVertexCounts_[i]));
         glLineWidth(1.0f);
     }
     glBindVertexArray(0);
