@@ -32,6 +32,7 @@ private:
     void loadImageFor3DModel(std::string& imagePath);
     void sliceActiveModel();
     void UnloadModel(int idx);
+    void finalizeSlicing();
     void showGenerationModal();
     void showSlicingModal();
     void showErrorModal(std::string &message);
@@ -66,4 +67,11 @@ private:
     bool showErrorModal_ = false;
     std::string errorModalMessage_;
     GLFWwindow* window_ = nullptr;
+
+    // Slicing bookkeeping
+    std::string pendingGcodePath_;
+    std::string pendingResizedPath_;
+    std::string pendingStlPath_;
+    int slicingModelIndex_ = -1;
+    std::atomic<bool> loadGcodePending_{false};
 };
