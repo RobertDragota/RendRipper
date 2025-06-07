@@ -392,6 +392,7 @@ void UIManager::sliceActiveModel() {
 
         // Update mesh position overrides so slicing happens at the current model location
         try {
+
             if (modelSettingsLoaded_) {
                 if (auto tf = modelManager_.GetTransform(slicingModelIndex_)) {
                     double mx = offX + tf->translation.x;
@@ -403,6 +404,7 @@ void UIManager::sliceActiveModel() {
                 }
                 saveModelSettings();
             }
+
         } catch (const std::exception& e) {
             std::lock_guard lk(slicingMessageMutex_);
             slicingMessage_ = std::string("Failed to update model settings: ") + e.what();
@@ -563,9 +565,11 @@ void UIManager::openModelPropertiesDialog() {
 
     ImGui::Separator();
     if (ImGui::CollapsingHeader("Slicing Settings")) {
+
         // Reload settings each time the header is opened to pick up external edits
         if (!modelSettingsLoaded_)
             loadModelSettings();
+
         if (!modelSettingsLoaded_) {
             ImGui::Text("model_settings.json not loaded");
         } else {
@@ -588,6 +592,7 @@ void UIManager::openModelPropertiesDialog() {
                     ImGui::TextUnformatted(key.c_str());
                     ImGui::TableSetColumnIndex(1);
                     ImGui::SetNextItemWidth(-FLT_MIN);
+
                     auto& def = entry["default_value"];
                     if (val.is_boolean()) {
                         bool b = val.get<bool>();
@@ -621,7 +626,9 @@ void UIManager::openModelPropertiesDialog() {
                             if (ImGui::InputText("##v", buf, sizeof(buf))) { s = buf; msChanged = true; }
                         }
                         val = s;
+
                         def = s;
+
                     }
                     ImGui::PopID();
                 }
