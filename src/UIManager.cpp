@@ -1,3 +1,10 @@
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <commdlg.h>
+#include <GLFW/glfw3native.h>
+#endif
+
 #include "UIManager.h"
 #include "MeshRepairer.h"
 #include <glm/gtc/matrix_transform.hpp>
