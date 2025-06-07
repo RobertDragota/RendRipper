@@ -36,6 +36,7 @@ public:
     float GetPrintHeight() const { return volumeHeight_; }
 
     void SetGCodeModel(std::shared_ptr<GCodeModel> gcodeModel) { gcodeModel_ = gcodeModel; }
+    void SetGCodeOffset(const glm::vec3& offset) { gcodeOffset_ = offset; }
     int currentGCodeLayerIndex_ = -1;
 
 private:
@@ -63,6 +64,8 @@ private:
 
     std::shared_ptr<GCodeModel> gcodeModel_;
     std::unique_ptr<Shader> gcodeShader_;
+
+    glm::vec3 gcodeOffset_ = glm::vec3(0.0f);
 
     GridRenderer     gridRenderer_;
     VolumeBoxRenderer volumeBoxRenderer_;

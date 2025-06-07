@@ -1,5 +1,5 @@
 {
-    "settings": {
+    "overrides": {
         "roofing_layer_count": {
             "value": 1,
             "default_value": 1

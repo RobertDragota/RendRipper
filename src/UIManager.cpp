@@ -116,7 +116,10 @@ void UIManager::showMenuBar() {
                 openFileDialog([this](std::string& selected){
                     try {
                         gcodeModel_ = std::make_shared<GCodeModel>(selected);
-                        if (renderer_) renderer_->SetGCodeModel(gcodeModel_);
+                        if (renderer_) {
+                            renderer_->SetGCodeOffset(glm::vec3(0.f));
+                            renderer_->SetGCodeModel(gcodeModel_);
+                        }
                         currentGCodeLayer_ = -1;
                     } catch (const std::exception& e) {
                         std::cerr << "Failed to load G-code: " << e.what() << std::endl;
@@ -592,7 +595,6 @@ void UIManager::renderModels(glm::mat4&) {
 void UIManager::finalizeSlicing() {
     try {
         auto gm = std::make_shared<GCodeModel>(pendingGcodePath_);
-        bool accept = true;
         if (renderer_) {
             glm::vec3 gcodeCenter = gm->GetCenter() -
                 glm::vec3(renderer_->GetBedHalfWidth(), renderer_->GetBedHalfDepth(), 0.f);
@@ -601,14 +603,11 @@ void UIManager::finalizeSlicing() {
                 Transform* tf = modelManager_.GetTransform(slicingModelIndex_);
                 if (tf) modelCenter = tf->translation;
             }
-            if (glm::length(gcodeCenter - modelCenter) > 0.5f) {
-                accept = false;
-                errorModalMessage_ = "Sliced g-code position mismatch.";
-                showErrorModal_ = true;
-            }
-            if (accept) renderer_->SetGCodeModel(gm);
+            glm::vec3 offset = modelCenter - gcodeCenter;
+            renderer_->SetGCodeOffset(offset);
+            renderer_->SetGCodeModel(gm);
         }
-        if (accept) gcodeModel_ = gm;
+        gcodeModel_ = gm;
         currentGCodeLayer_ = -1;
         UnloadModel(slicingModelIndex_);
         std::filesystem::remove(pendingResizedPath_);
