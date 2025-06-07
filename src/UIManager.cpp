@@ -21,6 +21,7 @@
 #include <thread>
 #include <regex>
 #include <cstdio>
+#include <nlohmann/json.hpp>
 
 #include "glm/gtx/intersect.hpp"
 
@@ -375,6 +376,24 @@ void UIManager::sliceActiveModel() {
         modelManager_.ExportTransformedModel(slicingModelIndex_, pendingResizedPath_);
         float offX = renderer_ ? renderer_->GetBedHalfWidth()  : 0.f;
         float offY = renderer_ ? renderer_->GetBedHalfDepth() : 0.f;
+
+        // Update mesh position overrides so slicing happens at the current model location
+        try {
+            nlohmann::json mj;
+            {
+                std::ifstream in(MODEL_SETTINGS_FILE);
+                in >> mj;
+            }
+            if (auto tf = modelManager_.GetTransform(slicingModelIndex_)) {
+                mj["overrides"]["mesh_position_x"]["value"] = offX + tf->translation.x;
+                mj["overrides"]["mesh_position_y"]["value"] = offY + tf->translation.y;
+            }
+            std::ofstream out(MODEL_SETTINGS_FILE);
+            out << mj.dump(4);
+        } catch (const std::exception& e) {
+            std::lock_guard lk(slicingMessageMutex_);
+            slicingMessage_ = std::string("Failed to update model settings: ") + e.what();
+        }
         std::string cmd = std::string(CURA_ENGINE_EXE) +
                           " slice -j " + std::string(PRIMITIVE_PRINTER_SETTINGS_FILE) + " -j " +
                           std::string(BASE_PRINTER_SETTINGS_FILE) + " -j " + std::string(A1MINI_PRINTER_SETTINGS_FILE) +
