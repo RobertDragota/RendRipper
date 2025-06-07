@@ -52,6 +52,14 @@
         "min_wall_line_width": {
             "value": 0.4,
             "default_value": 0.4
+        },
+        "mesh_position_x": {
+            "value": 90.0,
+            "default_value": 0
+        },
+        "mesh_position_y": {
+            "value": 90.0,
+            "default_value": 0
         }
     }
 }
