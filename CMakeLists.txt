@@ -111,6 +111,8 @@ file(GLOB_RECURSE IMGUI_FILES CONFIGURE_DEPENDS
 
 # Copy “resources” folder into the build directory
 file(COPY "${CMAKE_SOURCE_DIR}/resources" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+# Ensure runtime assets like fonts are available next to the executable
+file(COPY "${CMAKE_SOURCE_DIR}/assets" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 
 # ────────────────────────────────────────────────────────────────────────────────

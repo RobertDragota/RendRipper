@@ -1,22 +1,24 @@
 #include "WindowManager.h"
 #include <stdexcept>
 #include <iostream>
+#include <filesystem>
+#include <vector>
 #include <imgui.h>
 
 static void ApplyModernDarkStyle() {
     ImGuiStyle &style = ImGui::GetStyle();
     ImVec4 *colors = style.Colors;
-    ImVec4 bg_main_very_dark = ImVec4(0.09f, 0.09f, 0.09f, 1.00f);
-    ImVec4 bg_main = ImVec4(0.118f, 0.118f, 0.118f, 1.00f);
-    ImVec4 bg_secondary = ImVec4(0.145f, 0.145f, 0.149f, 1.00f);
-    ImVec4 bg_widget = ImVec4(0.220f, 0.220f, 0.220f, 1.00f);
+    ImVec4 bg_main_very_dark = ImVec4(0.02f, 0.02f, 0.05f, 1.00f);
+    ImVec4 bg_main = ImVec4(0.05f, 0.05f, 0.08f, 1.00f);
+    ImVec4 bg_secondary = ImVec4(0.08f, 0.08f, 0.12f, 1.00f);
+    ImVec4 bg_widget = ImVec4(0.15f, 0.15f, 0.20f, 1.00f);
     ImVec4 text_main = ImVec4(0.86f, 0.86f, 0.86f, 1.00f);
     ImVec4 text_disabled = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
-    ImVec4 accent_main = ImVec4(0.200f, 0.550f, 0.900f, 1.00f);
-    ImVec4 accent_hover = ImVec4(0.300f, 0.650f, 1.000f, 1.00f);
-    ImVec4 accent_active = ImVec4(0.100f, 0.450f, 0.800f, 1.00f);
-    ImVec4 border_main = ImVec4(0.220f, 0.220f, 0.220f, 1.00f);
-    ImVec4 border_light = ImVec4(0.27f, 0.27f, 0.27f, 1.00f);
+    ImVec4 accent_main = ImVec4(0.65f, 0.20f, 0.80f, 1.00f);
+    ImVec4 accent_hover = ImVec4(0.75f, 0.30f, 0.90f, 1.00f);
+    ImVec4 accent_active = ImVec4(0.55f, 0.10f, 0.70f, 1.00f);
+    ImVec4 border_main = ImVec4(0.20f, 0.20f, 0.25f, 1.00f);
+    ImVec4 border_light = ImVec4(0.27f, 0.27f, 0.32f, 1.00f);
     style.WindowPadding = ImVec2(8.0f, 8.0f);
     style.FramePadding = ImVec2(6.0f, 4.0f);
     style.ItemSpacing = ImVec2(8.0f, 4.0f);
@@ -149,7 +151,20 @@ void WindowManager::InitImGui() {
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
     io.Fonts->AddFontDefault();
-    io.Fonts->AddFontFromFileTTF("assets/fonts/Orbitron-Bold.ttf", 16.0f);
+    const char* fontRel = "assets/fonts/Orbitron-Bold.ttf";
+    std::vector<std::string> search{
+        fontRel,
+        std::string("../") + fontRel,
+        std::string("../../") + fontRel
+    };
+    ImFont* orbitron = nullptr;
+    for (const auto& p : search) {
+        if (std::filesystem::exists(p)) {
+            orbitron = io.Fonts->AddFontFromFileTTF(p.c_str(), 16.0f);
+            if (orbitron) break;
+        }
+    }
+    if (orbitron) io.FontDefault = orbitron;
     ApplyModernDarkStyle();
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
         ImGuiStyle& style = ImGui::GetStyle();
