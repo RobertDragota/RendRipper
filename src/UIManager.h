@@ -4,6 +4,8 @@
 #include <mutex>
 #include <string>
 #include <filesystem>
+#include <vector>
+#include <unordered_map>
 #include <imgui.h>
 #include <ImGuizmo.h>
 #ifndef GLFW_INCLUDE_NONE
@@ -15,6 +17,9 @@
 #include "GizmoController.h"
 #include "CameraController.h"
 #include "GCodeModel.h"
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 class UIManager {
 public:
@@ -28,6 +33,8 @@ private:
     void openFileDialog(const std::function<void(std::string&)>& onFileSelected = nullptr);
     void openRenderScene();
     void openModelPropertiesDialog();
+    void loadModelSettings();
+    void saveModelSettings();
     void loadModel(std::string& modelPath);
     void loadImageFor3DModel(std::string& imagePath);
     void sliceActiveModel();
@@ -74,4 +81,8 @@ private:
     std::string pendingStlPath_;
     int slicingModelIndex_ = -1;
     std::atomic<bool> loadGcodePending_{false};
+
+    json modelSettings_;
+    bool modelSettingsLoaded_ = false;
+    std::unordered_map<std::string, std::vector<std::string>> enumOptions_;
 };
