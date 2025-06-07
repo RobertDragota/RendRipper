@@ -375,6 +375,9 @@ void UIManager::sliceActiveModel() {
     slicingDone_.store(false);
     slicingProgress_.store(0.0f);
 
+    // Ensure any pending changes in the UI are written to disk
+    saveModelSettings();
+
     std::thread([this]() {
         if (!std::filesystem::exists(MODEL_SETTINGS_FILE)) {
             std::lock_guard lk(slicingMessageMutex_);
@@ -386,17 +389,13 @@ void UIManager::sliceActiveModel() {
 
         // Update mesh position overrides so slicing happens at the current model location
         try {
-            nlohmann::json mj;
-            {
-                std::ifstream in(MODEL_SETTINGS_FILE);
-                in >> mj;
-            }
+            if (!modelSettingsLoaded_)
+                loadModelSettings();
             if (auto tf = modelManager_.GetTransform(slicingModelIndex_)) {
-                mj["overrides"]["mesh_position_x"]["value"] = offX + tf->translation.x;
-                mj["overrides"]["mesh_position_y"]["value"] = offY + tf->translation.y;
+                modelSettings_["overrides"]["mesh_position_x"]["value"] = offX + tf->translation.x;
+                modelSettings_["overrides"]["mesh_position_y"]["value"] = offY + tf->translation.y;
             }
-            std::ofstream out(MODEL_SETTINGS_FILE);
-            out << mj.dump(4);
+            saveModelSettings();
         } catch (const std::exception& e) {
             std::lock_guard lk(slicingMessageMutex_);
             slicingMessage_ = std::string("Failed to update model settings: ") + e.what();
@@ -562,7 +561,6 @@ void UIManager::openModelPropertiesDialog() {
         } else {
             bool msChanged = false;
             auto& overrides = modelSettings_["overrides"];
-
             ImGuiTableFlags tFlags = ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchProp |
                                     ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV;
             if (ImGui::BeginTable("SliceSettingsTable", 2, tFlags)) {
