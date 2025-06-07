@@ -1,3 +1,14 @@
+#pragma once
+
+#include <memory>
+#include <string>
+#include <vector>
+#include <glm/glm.hpp>
+
+class Shader;
+class Model;
+struct Transform;
+
 class ModelManager {
 public:
     int LoadModel(const std::string &modelPath);
