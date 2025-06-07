@@ -13,10 +13,11 @@ int ModelManager::LoadModel(const std::string &modelPath) {
 
     float maxDim = glm::max(size.x, glm::max(size.y, size.z));
     float scaleFactor = 1.0f;
-    if (maxDim > 0.01f && maxDim <= 1.0f)
+    if (maxDim > 0.01f && maxDim <= 10.0f)
+        {
+        size = glm::normalize(size);
         scaleFactor = 100.0f;
-    else if (maxDim > 1.0f && maxDim <= 10.0f)
-        scaleFactor = 10.0f;
+        }
 
     size *= scaleFactor;
     meshDimensions_.push_back(size);
