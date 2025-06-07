@@ -20,6 +20,8 @@
 #include <thread>
 #include <cstdio>
 
+#include "glm/gtx/intersect.hpp"
+
 // Utility: ray-sphere intersection using GLM helpers
 static bool RayIntersectSphere(const glm::vec3& origin,
                                const glm::vec3& dir,
