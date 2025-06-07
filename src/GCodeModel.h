@@ -33,6 +33,11 @@ public:
     /// That is, layerZs_[i] = the Z coordinate that was first encountered for layer i.
     const std::vector<float>& GetLayerHeights() const { return layerZs_; }
 
+    /// Accessors for overall bounds and center
+    const glm::vec3& GetBoundsMin() const { return boundsMin_; }
+    const glm::vec3& GetBoundsMax() const { return boundsMax_; }
+    const glm::vec3& GetCenter() const { return center_; }
+
 private:
     void computeBounds();
 
@@ -44,6 +49,8 @@ private:
     // We keep bounds of ALL points (regardless of layer) so that a “layer slider” scaled correctly if needed.
     glm::vec3 center_;
     float radius_;
+    glm::vec3 boundsMin_;
+    glm::vec3 boundsMax_;
 
     using ColoredVertex = GCodeColoredVertex;
 

@@ -370,10 +370,14 @@ void UIManager::sliceActiveModel() {
             slicingMessage_ = "model_settings.json not found.";
         }
         modelManager_.ExportTransformedModel(slicingModelIndex_, pendingResizedPath_);
+        float offX = renderer_ ? renderer_->GetBedHalfWidth()  : 0.f;
+        float offY = renderer_ ? renderer_->GetBedHalfDepth() : 0.f;
         std::string cmd = std::string(CURA_ENGINE_EXE) +
                           " slice -j " + std::string(PRIMITIVE_PRINTER_SETTINGS_FILE) + " -j " +
                           std::string(BASE_PRINTER_SETTINGS_FILE) + " -j " + std::string(A1MINI_PRINTER_SETTINGS_FILE) +
                           " -j " + std::string(MODEL_SETTINGS_FILE) +
+                          " -s mesh_position_x=" + std::to_string(offX) +
+                          " -s mesh_position_y=" + std::to_string(offY) +
                           " -l \"" + pendingResizedPath_ + "\"" +
                           " -o \"" + pendingGcodePath_ + "\"";
         std::cout << cmd;
@@ -588,8 +592,23 @@ void UIManager::renderModels(glm::mat4&) {
 void UIManager::finalizeSlicing() {
     try {
         auto gm = std::make_shared<GCodeModel>(pendingGcodePath_);
-        if (renderer_) renderer_->SetGCodeModel(gm);
-        gcodeModel_ = gm;
+        bool accept = true;
+        if (renderer_) {
+            glm::vec3 gcodeCenter = gm->GetCenter() -
+                glm::vec3(renderer_->GetBedHalfWidth(), renderer_->GetBedHalfDepth(), 0.f);
+            glm::vec3 modelCenter(0.f);
+            if (slicingModelIndex_ >= 0) {
+                Transform* tf = modelManager_.GetTransform(slicingModelIndex_);
+                if (tf) modelCenter = tf->translation;
+            }
+            if (glm::length(gcodeCenter - modelCenter) > 0.5f) {
+                accept = false;
+                errorModalMessage_ = "Sliced g-code position mismatch.";
+                showErrorModal_ = true;
+            }
+            if (accept) renderer_->SetGCodeModel(gm);
+        }
+        if (accept) gcodeModel_ = gm;
         currentGCodeLayer_ = -1;
         UnloadModel(slicingModelIndex_);
         std::filesystem::remove(pendingResizedPath_);
