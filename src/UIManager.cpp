@@ -3,10 +3,15 @@
 #include <glad/glad.h> // glad must be included before Windows headers
 #include <windows.h>
 #include <commdlg.h>
-#include <GLFW/glfw3native.h>
 #endif
 
 #include "UIManager.h"
+#ifdef _WIN32
+#ifndef GLFW_EXPOSE_NATIVE_WIN32
+#define GLFW_EXPOSE_NATIVE_WIN32
+#endif
+#include <GLFW/glfw3native.h>
+#endif
 #include "MeshRepairer.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -14,6 +19,18 @@
 #include <limits>
 #include <thread>
 #include <cstdio>
+
+// Utility: ray-sphere intersection using GLM helpers
+static bool RayIntersectSphere(const glm::vec3& origin,
+                               const glm::vec3& dir,
+                               const glm::vec3& center,
+                               float radius,
+                               float& t)
+{
+    // GLM requires the squared radius and a normalized direction
+    return glm::intersectRaySphere(origin, glm::normalize(dir),
+                                   center, radius * radius, t);
+}
 
 UIManager::UIManager(ModelManager& mm, SceneRenderer* renderer,
                      GizmoController& gizmo, CameraController& camera,
