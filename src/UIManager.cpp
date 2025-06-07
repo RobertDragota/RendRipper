@@ -562,46 +562,60 @@ void UIManager::openModelPropertiesDialog() {
         } else {
             bool msChanged = false;
             auto& overrides = modelSettings_["overrides"];
-            for (auto it = overrides.begin(); it != overrides.end(); ++it) {
-                auto& entry = it.value();
-                if (!entry.contains("value")) continue;
-                const std::string key = it.key();
-                auto& val = entry["value"];
-                ImGui::PushID(key.c_str());
-                if (val.is_boolean()) {
-                    bool b = val.get<bool>();
-                    if (ImGui::Checkbox(key.c_str(), &b)) { val = b; msChanged = true; }
-                } else if (val.is_number_integer()) {
-                    int v = val.get<int>();
-                    if (ImGui::InputInt(key.c_str(), &v)) { val = v; msChanged = true; }
-                } else if (val.is_number_float()) {
-                    double v = val.get<double>();
-                    if (ImGui::InputDouble(key.c_str(), &v)) { val = v; msChanged = true; }
-                } else if (val.is_string()) {
-                    std::string s = val.get<std::string>();
-                    auto optIt = enumOptions_.find(key);
-                    if (optIt != enumOptions_.end() && !optIt->second.empty()) {
-                        int current = 0;
-                        for (size_t i=0;i<optIt->second.size();++i)
-                            if (optIt->second[i] == s) current = static_cast<int>(i);
-                        if (ImGui::BeginCombo("", optIt->second[current].c_str())) {
-                            for (size_t i=0;i<optIt->second.size();++i) {
-                                bool selected = (current==static_cast<int>(i));
-                                if (ImGui::Selectable(optIt->second[i].c_str(), selected)) {
-                                    current = static_cast<int>(i); msChanged = true; s = optIt->second[i];
+
+            ImGuiTableFlags tFlags = ImGuiTableFlags_Resizable | ImGuiTableFlags_SizingStretchProp |
+                                    ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV;
+            if (ImGui::BeginTable("SliceSettingsTable", 2, tFlags)) {
+                ImGui::TableSetupColumn("Property", ImGuiTableColumnFlags_WidthStretch, 0.6f);
+                ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch, 0.4f);
+                ImGui::TableHeadersRow();
+                for (auto it = overrides.begin(); it != overrides.end(); ++it) {
+                    auto& entry = it.value();
+                    if (!entry.contains("value")) continue;
+                    const std::string key = it.key();
+                    auto& val = entry["value"];
+                    ImGui::PushID(key.c_str());
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::TextUnformatted(key.c_str());
+                    ImGui::TableSetColumnIndex(1);
+                    ImGui::SetNextItemWidth(-FLT_MIN);
+                    if (val.is_boolean()) {
+                        bool b = val.get<bool>();
+                        if (ImGui::Checkbox("##v", &b)) { val = b; msChanged = true; }
+                    } else if (val.is_number_integer()) {
+                        int v = val.get<int>();
+                        if (ImGui::InputInt("##v", &v)) { val = v; msChanged = true; }
+                    } else if (val.is_number_float()) {
+                        double v = val.get<double>();
+                        if (ImGui::InputDouble("##v", &v)) { val = v; msChanged = true; }
+                    } else if (val.is_string()) {
+                        std::string s = val.get<std::string>();
+                        auto optIt = enumOptions_.find(key);
+                        if (optIt != enumOptions_.end() && !optIt->second.empty()) {
+                            int current = 0;
+                            for (size_t i=0;i<optIt->second.size();++i)
+                                if (optIt->second[i] == s) current = static_cast<int>(i);
+                            if (ImGui::BeginCombo("##combo", optIt->second[current].c_str())) {
+                                for (size_t i=0;i<optIt->second.size();++i) {
+                                    bool selected = (current==static_cast<int>(i));
+                                    if (ImGui::Selectable(optIt->second[i].c_str(), selected)) {
+                                        current = static_cast<int>(i); msChanged = true; s = optIt->second[i];
+                                    }
+                                    if (selected) ImGui::SetItemDefaultFocus();
                                 }
-                                if (selected) ImGui::SetItemDefaultFocus();
+                                ImGui::EndCombo();
                             }
-                            ImGui::EndCombo();
+                        } else {
+                            char buf[128];
+                            strncpy(buf, s.c_str(), sizeof(buf)); buf[sizeof(buf)-1] = '\0';
+                            if (ImGui::InputText("##v", buf, sizeof(buf))) { s = buf; msChanged = true; }
                         }
-                    } else {
-                        char buf[128];
-                        strncpy(buf, s.c_str(), sizeof(buf)); buf[sizeof(buf)-1] = '\0';
-                        if (ImGui::InputText("", buf, sizeof(buf))) { s = buf; msChanged = true; }
+                        val = s;
                     }
-                    val = s;
+                    ImGui::PopID();
                 }
-                ImGui::PopID();
+                ImGui::EndTable();
             }
             if (msChanged) saveModelSettings();
         }
