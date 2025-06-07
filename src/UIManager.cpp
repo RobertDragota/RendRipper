@@ -1,5 +1,6 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
+#include <glad/glad.h> // glad must be included before Windows headers
 #include <windows.h>
 #include <commdlg.h>
 #include <GLFW/glfw3native.h>
