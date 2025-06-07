@@ -19,6 +19,7 @@
 #include <iostream>
 #include <limits>
 #include <thread>
+#include <regex>
 #include <cstdio>
 
 #include "glm/gtx/intersect.hpp"
@@ -211,12 +212,20 @@ void UIManager::loadImageFor3DModel(std::string& imagePath) {
             return;
         }
         char buffer[512];
+        int currentStage = 0;
         while (fgets(buffer, sizeof(buffer), pipe)) {
             std::string line(buffer);
             if (!line.empty() && line.back() == '\n') line.pop_back();
             {
                 std::lock_guard lk(generationMessageMutex_);
                 generationMessage_ = line;
+            }
+            if (currentStage < numStages &&
+                line.find(stages[currentStage]) != std::string::npos &&
+                line.find("finished") != std::string::npos)
+            {
+                ++currentStage;
+                progress_.store(static_cast<float>(currentStage) / numStages);
             }
         }
 #ifdef _WIN32
@@ -381,6 +390,13 @@ void UIManager::sliceActiveModel() {
                 std::lock_guard lk(slicingMessageMutex_);
                 slicingMessage_ = line;
             }
+            std::smatch m;
+            if (std::regex_search(line, m, std::regex("([0-9]+(?:\\.[0-9]+)?)%"))) {
+                try {
+                    float perc = std::stof(m[1].str());
+                    slicingProgress_.store(perc / 100.f);
+                } catch (...) {}
+            }
         }
 #ifdef _WIN32
         int ret = _pclose(pipe);
@@ -399,6 +415,7 @@ void UIManager::sliceActiveModel() {
                 renderer_->SetGCodeModel(gm);
                 gcodeModel_ = gm;
                 currentGCodeLayer_ = -1;
+                UnloadModel(modelIndex);
                 std::filesystem::remove(resized);
                 std::filesystem::remove(stlPath);
                 std::filesystem::remove_all(std::string(OUTPUT_DIR));
