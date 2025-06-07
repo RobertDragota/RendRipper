@@ -110,10 +110,10 @@ void UIManager::Frame() {
 void UIManager::showMenuBar() {
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
-            if (ImGui::MenuItem("Open 3D Model...")) {
+            if (ImGui::MenuItem("Open 3D Model")) {
                 openFileDialog([this](std::string& selected){ loadModel(selected); });
             }
-            if (ImGui::MenuItem("Open G-code...")) {
+            if (ImGui::MenuItem("Open G-code")) {
                 openFileDialog([this](std::string& selected){
                     try {
                         gcodeModel_ = std::make_shared<GCodeModel>(selected);
