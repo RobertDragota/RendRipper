@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.30)
+cmake_minimum_required(VERSION 3.28)
 project(RendRipper)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -135,15 +135,18 @@ add_executable(RendRipper
 
 # ────────────────────────────────────────────────────────────────────────────────
 # 15) _CuraEngine (imported) example, if you still need it
-add_library(_CuraEngine STATIC IMPORTED)
-set_target_properties(_CuraEngine PROPERTIES
-		IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/Slicer/CuraEngine/build/Release/_CuraEngine.lib"
-)
-target_include_directories(_CuraEngine INTERFACE
-		"$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/Slicer/CuraEngine/src>"
-		"$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/Slicer/CuraEngine/include>"
-		"$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/Slicer/CuraEngine/build/Release>"
-)
+set(CURAE_LIB "${CMAKE_SOURCE_DIR}/Slicer/CuraEngine/build/Release/_CuraEngine.lib")
+if(EXISTS ${CURAE_LIB})
+    add_library(_CuraEngine STATIC IMPORTED)
+    set_target_properties(_CuraEngine PROPERTIES IMPORTED_LOCATION ${CURAE_LIB})
+    target_include_directories(_CuraEngine INTERFACE
+        "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/Slicer/CuraEngine/src>"
+        "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/Slicer/CuraEngine/include>"
+        "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/Slicer/CuraEngine/build/Release>"
+    )
+else()
+    add_library(_CuraEngine INTERFACE)
+endif()
 
 # ────────────────────────────────────────────────────────────────────────────────
 # 16) Optional meshlib availability define (if your code tests MESHLIB_AVAILABLE)

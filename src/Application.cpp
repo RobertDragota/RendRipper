@@ -2,13 +2,13 @@
 #include <iostream>
 
 Application::Application(int w, int h, const char* title)
-    : width_(w), height_(h) {
-    window_ = std::make_unique<WindowManager>(width_, height_, title);
-    renderer_ = std::make_unique<SceneRenderer>(A1MINI_PRINTER_SETTINGS_FILE);
+    : width_(w), height_(h),
+      window_(std::make_unique<WindowManager>(width_, height_, title)),
+      renderer_(std::make_unique<SceneRenderer>(A1MINI_PRINTER_SETTINGS_FILE)),
+      ui_(modelManager_, renderer_.get(), gizmo_, camera_, window_->GetWindow()) {
     if (renderer_) {
         renderer_->SetViewportSize(width_, height_);
     }
-    ui_ = UIManager(modelManager_, renderer_.get(), gizmo_, camera_, window_->GetWindow());
 }
 
 Application::~Application() { Cleanup(); }
