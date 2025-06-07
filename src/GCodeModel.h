@@ -27,7 +27,7 @@ public:
     void DrawUpToLayer(int maxLayerIndex, Shader& lineShader) const;
 
     /// Number of layers parsed
-    int GetLayerCount() const { return static_cast<int>(layers_.size()); }
+    int GetLayerCount() const { return static_cast<int>(layerVertexCounts_.size()); }
 
     /// Returns the Z-height (in mm) of each layer index.
     /// That is, layerZs_[i] = the Z coordinate that was first encountered for layer i.
@@ -50,6 +50,7 @@ private:
     // Each layer is now a flat list of ColoredVertex pairs forming line segments
     // layers_[i] = vertices for layer i, in consecutive pairs.
     std::vector<std::vector<ColoredVertex>> layers_;
+    std::vector<size_t> layerVertexCounts_;
     std::vector<float> layerZs_;
 
     // OpenGL handles: each layer gets its own VAO/VBO pair.
