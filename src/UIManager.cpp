@@ -15,6 +15,7 @@
 #include "MeshRepairer.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <filesystem>
 #include <iostream>
 #include <limits>
 #include <thread>
@@ -342,17 +343,22 @@ void UIManager::sliceActiveModel() {
     slicing_.store(true);
     slicingDone_.store(false);
     slicingProgress_.store(0.0f);
-    std::thread([this, stlPath]() {
+    int modelIndex = activeModel_;
+    std::thread([this, stlPath, modelIndex]() {
         if (!std::filesystem::exists(MODEL_SETTINGS_FILE)) {
             std::lock_guard lk(slicingMessageMutex_);
             slicingMessage_ = "model_settings.json not found.";
         }
-        std::filesystem::path output = std::filesystem::path(stlPath).replace_extension(".gcode");
+        std::filesystem::path base(stlPath);
+        std::string name = base.stem().string();
+        std::filesystem::path resized = std::filesystem::path(GCODE_OUTPUT_DIR) / (name + "_resized.stl");
+        modelManager_.ExportTransformedModel(modelIndex, resized.string());
+        std::filesystem::path output = std::filesystem::path(GCODE_OUTPUT_DIR) / (name + ".gcode");
         std::string cmd = std::string(CURA_ENGINE_EXE) +
                           " slice -j " + std::string(PRIMITIVE_PRINTER_SETTINGS_FILE) + " -j " +
                           std::string(BASE_PRINTER_SETTINGS_FILE) + " -j " + std::string(A1MINI_PRINTER_SETTINGS_FILE) +
                           " -j " + std::string(MODEL_SETTINGS_FILE) +
-                          " -l \"" + stlPath + "\"" +
+                          " -l \"" + resized.string() + "\"" +
                           " -o \"" + output.string() + "\"";
         std::cout << cmd;
 #ifdef _WIN32
@@ -393,6 +399,9 @@ void UIManager::sliceActiveModel() {
                 renderer_->SetGCodeModel(gm);
                 gcodeModel_ = gm;
                 currentGCodeLayer_ = -1;
+                std::filesystem::remove(resized);
+                std::filesystem::remove(stlPath);
+                std::filesystem::remove_all(std::string(OUTPUT_DIR));
             } catch (const std::exception& e) {
                 std::lock_guard lk(slicingMessageMutex_);
                 slicingMessage_ += std::string(" | Load failed: ") + e.what();
