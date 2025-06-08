@@ -27,13 +27,13 @@ void VolumeBoxRenderer::Init(float halfX, float halfY, float height)
                                        "../../resources/shaders/simple_line.frag");
 }
 
-void VolumeBoxRenderer::Render(const glm::mat4 &view, const glm::mat4 &proj, const glm::vec3 &color)
+void VolumeBoxRenderer::Render(const glm::mat4 &view, const glm::mat4 &proj, const glm::mat4 &model, const glm::vec3 &color)
 {
     if (!shader_ || vao_ == 0) return;
     shader_->use();
     shader_->setMat4("view", view);
     shader_->setMat4("projection", proj);
-    shader_->setMat4("model", glm::mat4(1.0f));
+    shader_->setMat4("model", model);
     if (shader_->hasUniform("lineColor")) shader_->setVec3("lineColor", color);
     glBindVertexArray(vao_);
     glDrawArrays(GL_LINES, 0, 24);

@@ -62,6 +62,8 @@ private:
     float volumeHalfY_;
     float volumeHeight_;
 
+    glm::mat4 platformTransform_ = glm::mat4(1.0f);
+
     std::shared_ptr<GCodeModel> gcodeModel_;
     std::unique_ptr<Shader> gcodeShader_;
 

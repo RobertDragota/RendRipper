@@ -30,7 +30,7 @@ void AxesRenderer::Init()
                                        "../../resources/shaders/simple_colored_line.frag");
 }
 
-void AxesRenderer::Render(const glm::mat4 &view, const glm::mat4 &proj, const glm::vec3 &offset)
+void AxesRenderer::Render(const glm::mat4 &view, const glm::mat4 &proj, const glm::mat4 &model, const glm::vec3 &offset)
 {
     if (!shader_ || vao_ == 0) return;
     GLboolean depthTestEnabled;
@@ -40,8 +40,8 @@ void AxesRenderer::Render(const glm::mat4 &view, const glm::mat4 &proj, const gl
     glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
     shader_->use();
-    glm::mat4 model = glm::translate(glm::mat4(1.0f), offset);
-    shader_->setMat4("model", model);
+    glm::mat4 m = glm::translate(model, offset);
+    shader_->setMat4("model", m);
     shader_->setMat4("view", view);
     shader_->setMat4("projection", proj);
     glBindVertexArray(vao_);

@@ -30,7 +30,7 @@ void GridRenderer::Init(float halfX, float halfY)
                                       "../../resources/shaders/infinite_grid.frag");
 }
 
-void GridRenderer::Render(const glm::mat4 &view, const glm::mat4 &proj)
+void GridRenderer::Render(const glm::mat4 &view, const glm::mat4 &proj, const glm::mat4 &model)
 {
     if (!shader_ || vao_ == 0) return;
     glEnable(GL_BLEND);
@@ -39,7 +39,7 @@ void GridRenderer::Render(const glm::mat4 &view, const glm::mat4 &proj)
     shader_->use();
     shader_->setMat4("view", view);
     shader_->setMat4("projection", proj);
-    shader_->setMat4("model", glm::mat4(1.0f));
+    shader_->setMat4("model", model);
     if (shader_->hasUniform("gridSpacing")) shader_->setFloat("gridSpacing", 5.0f);
     if (shader_->hasUniform("lineWidth")) shader_->setFloat("lineWidth", 0.5f);
     glBindVertexArray(vao_);
