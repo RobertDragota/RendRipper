@@ -29,6 +29,7 @@
 #include <nlohmann/json.hpp>
 
 #include "glm/gtx/intersect.hpp"
+#include "Pipe.h"
 
 using json = nlohmann::json;
 
@@ -90,12 +91,8 @@ void UIManager::loadImageFor3DModel(std::string& imagePath) {
                           " --mc-resolution 256" +
                           " --output-dir " + std::string(OUTPUT_DIR) +
                           " 2>&1";
-#ifdef _WIN32
-        FILE* pipe = _popen(cmd.c_str(), "r");
-#else
-        FILE* pipe = popen(cmd.c_str(), "r");
-#endif
-        if (!pipe) {
+        Pipe pipe(cmd);
+        if (!pipe.valid()) {
             std::lock_guard lk(generationMessageMutex_);
             generationMessage_ = "Failed to start TripoSR process.";
             generationDone_.store(true);
@@ -104,7 +101,7 @@ void UIManager::loadImageFor3DModel(std::string& imagePath) {
         }
         char buffer[512];
         int currentStage = 0;
-        while (fgets(buffer, sizeof(buffer), pipe)) {
+        while (fgets(buffer, sizeof(buffer), pipe.get())) {
             std::string line(buffer);
             if (!line.empty() && line.back() == '\n') line.pop_back();
             {
@@ -119,11 +116,7 @@ void UIManager::loadImageFor3DModel(std::string& imagePath) {
                 progress_.store(static_cast<float>(currentStage) / numStages);
             }
         }
-#ifdef _WIN32
-        int ret = _pclose(pipe);
-#else
-        int ret = pclose(pipe);
-#endif
+        int ret = pipe.close();
         {
             std::lock_guard lk(generationMessageMutex_);
             if (ret == 0)
@@ -303,12 +296,8 @@ void UIManager::sliceActiveModel() {
                           " -l \"" + pendingResizedPath_ + "\"" +
                           " -o \"" + pendingGcodePath_ + "\"";
         std::cout << cmd;
-#ifdef _WIN32
-        FILE* pipe = _popen(cmd.c_str(), "r");
-#else
-        FILE* pipe = popen(cmd.c_str(), "r");
-#endif
-        if (!pipe) {
+        Pipe pipe(cmd);
+        if (!pipe.valid()) {
             std::lock_guard lk(slicingMessageMutex_);
             slicingMessage_ = "Failed to start CuraEngine.";
             slicingDone_.store(true);
@@ -316,7 +305,7 @@ void UIManager::sliceActiveModel() {
             return;
         }
         char buffer[512];
-        while (fgets(buffer, sizeof(buffer), pipe)) {
+        while (fgets(buffer, sizeof(buffer), pipe.get())) {
             std::string line(buffer);
             if (!line.empty() && line.back() == '\n') line.pop_back();
             {
@@ -331,11 +320,7 @@ void UIManager::sliceActiveModel() {
                 } catch (...) {}
             }
         }
-#ifdef _WIN32
-        int ret = _pclose(pipe);
-#else
-        int ret = pclose(pipe);
-#endif
+        int ret = pipe.close();
         {
             std::lock_guard lk(slicingMessageMutex_);
             slicingMessage_ = (ret == 0) ? "Slicing complete!" : ("Slicing failed (code " + std::to_string(ret) + ")");
