@@ -129,12 +129,12 @@ target_include_directories(ImGuizmo PUBLIC
 # ────────────────────────────────────────────────────────────────────────────────
 # 14) Declare the executable
 add_executable(RendRipper
-		${SRC_FILES}
-		${IMGUI_FILES}
-		src/MeshRepairer.cpp
-		src/MeshRepairer.h
-		src/GCodeModel.cpp
-		src/GCodeModel.h
+                ${SRC_FILES}
+                ${IMGUI_FILES}
+                src/models/MeshRepairer.cpp
+                src/models/MeshRepairer.h
+                src/gcode/GCodeModel.cpp
+                src/gcode/GCodeModel.h
 )
 
 # ────────────────────────────────────────────────────────────────────────────────
@@ -171,14 +171,22 @@ target_compile_definitions(RendRipper PRIVATE
 # 17) Include directories for RendRipper
 #     (We already added all the includes globally above, but if you want to be explicit:)
 target_include_directories(RendRipper PRIVATE
-		${IM_GUI_INCLUDE}
-		${IM_GUI_BACKEND_INCLUDE}
-		${GLFW_INCLUDE_DIR}
-		${GLM_INCLUDE_DIRS}
-		${STB_INCLUDE_DIR}
-		${IM_GUIZMO_INCLUDE}
-		${MESHLIB_INCLUDE_DIR}
-		${GLAD_INCLUDE}
+                ${IM_GUI_INCLUDE}
+                ${IM_GUI_BACKEND_INCLUDE}
+                ${GLFW_INCLUDE_DIR}
+                ${GLM_INCLUDE_DIRS}
+                ${STB_INCLUDE_DIR}
+                ${IM_GUIZMO_INCLUDE}
+                ${MESHLIB_INCLUDE_DIR}
+                ${GLAD_INCLUDE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/src
+                ${CMAKE_CURRENT_SOURCE_DIR}/src/app
+                ${CMAKE_CURRENT_SOURCE_DIR}/src/controllers
+                ${CMAKE_CURRENT_SOURCE_DIR}/src/rendering
+                ${CMAKE_CURRENT_SOURCE_DIR}/src/models
+                ${CMAKE_CURRENT_SOURCE_DIR}/src/gcode
+                ${CMAKE_CURRENT_SOURCE_DIR}/src/ui
+                ${CMAKE_CURRENT_SOURCE_DIR}/src/utils
 )
 
 # ────────────────────────────────────────────────────────────────────────────────
