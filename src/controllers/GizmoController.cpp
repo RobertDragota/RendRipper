@@ -34,15 +34,18 @@ namespace
     class BasicOperation : public IGizmoOperation
     {
     public:
+        explicit BasicOperation(const glm::vec3 &off) : offset(off) {}
         void Apply(const glm::mat4 &m, ITransform &t) override
         {
             glm::vec3 tr, sc;
             glm::quat rot;
             DecomposeMatrix(m, tr, sc, rot);
-            t.setTranslation(tr);
+            t.setTranslation(tr - offset);
             t.setScale(sc);
             t.setRotationQuat(rot);
         }
+    private:
+        glm::vec3 offset;
     };
 
 } // namespace
@@ -50,7 +53,7 @@ namespace
 GizmoController::GizmoController()
     : currentOp_(ImGuizmo::TRANSLATE),
       currentMode_(ImGuizmo::LOCAL),
-      operation_(std::make_unique<BasicOperation>())
+      operation_(std::make_unique<BasicOperation>(offset_))
 {
 }
 
@@ -68,8 +71,8 @@ void GizmoController::Manipulate
     float windowHeight = ImGui::GetWindowHeight();
     ImGuizmo::SetRect(windowPos.x, windowPos.y, windowWidth, windowHeight);
 
-    // current model matrix
-    glm::mat4 model = glm::translate(glm::mat4(1.0f), transform.getTranslation())
+    // current model matrix with offset so the gizmo shows machine coordinates
+    glm::mat4 model = glm::translate(glm::mat4(1.0f), transform.getTranslation() + offset_)
                       * glm::toMat4(transform.getRotationQuat())
                       * glm::scale(glm::mat4(1.0f), transform.getScale());
 
@@ -108,5 +111,5 @@ void GizmoController::SetCurrentMode(ImGuizmo::OPERATION operation)
 
 void GizmoController::updateOperation()
 {
-    operation_ = std::make_unique<BasicOperation>();
+    operation_ = std::make_unique<BasicOperation>(offset_);
 }

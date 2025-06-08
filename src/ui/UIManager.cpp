@@ -40,6 +40,10 @@ UIManager::UIManager(ModelManager& mm, SceneRenderer* renderer,
     : modelManager_(mm), renderer_(renderer), gizmo_(gizmo), camera_(camera), window_(window)
 {
     loadModelSettings();
+    if (renderer_)
+        gizmo_.SetOffset(glm::vec3(renderer_->GetBedHalfWidth() + renderer_->GetPlatformOffset().x,
+                                    renderer_->GetPlatformOffset().y,
+                                    renderer_->GetBedHalfDepth() + renderer_->GetPlatformOffset().z));
 }
 
 void UIManager::Frame() {
@@ -103,8 +107,8 @@ void UIManager::showMenuBar() {
                         gcodeModel_ = std::make_shared<GCodeModel>(selected);
                         if (renderer_) {
                             glm::vec3 c = gcodeModel_->GetCenter();
-                            glm::vec3 offset(renderer_->GetBedHalfWidth() - c.x,
-                                             renderer_->GetBedHalfDepth() - c.y,
+                            glm::vec3 offset(renderer_->GetBedHalfWidth() + renderer_->GetPlatformOffset().x - c.x,
+                                             renderer_->GetBedHalfDepth() + renderer_->GetPlatformOffset().z - c.y,
                                              0.f);
                             renderer_->SetGCodeOffset(offset);
                             renderer_->SetGCodeModel(gcodeModel_);

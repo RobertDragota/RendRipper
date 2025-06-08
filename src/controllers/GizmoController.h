@@ -33,6 +33,8 @@ public:
 
     void SetCurrentMode(ImGuizmo::OPERATION operation);
 
+    void SetOffset(const glm::vec3 &off) { offset_ = off; }
+
 private:
     void updateOperation();
 
@@ -40,4 +42,5 @@ private:
     ImGuizmo::MODE currentMode_;
 
     std::unique_ptr<IGizmoOperation> operation_;
+    glm::vec3 offset_{0.0f};
 };
