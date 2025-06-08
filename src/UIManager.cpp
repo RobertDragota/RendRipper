@@ -735,8 +735,24 @@ void UIManager::renderModels(glm::mat4&) {
 void UIManager::finalizeSlicing() {
     try {
         auto gm = std::make_shared<GCodeModel>(pendingGcodePath_);
+        glm::vec3 offset(0.f);
+        if (modelSettingsLoaded_) {
+            try {
+                auto& ov = modelSettings_["overrides"];
+                if (ov.contains("mesh_position_x") && ov.contains("mesh_position_y")) {
+                    double posX = ov["mesh_position_x"]["value"].get<double>();
+                    double posY = ov["mesh_position_y"]["value"].get<double>();
+                    glm::vec3 c = gm->GetCenter();
+                    offset = glm::vec3(static_cast<float>(posX - c.x),
+                                       static_cast<float>(posY - c.y),
+                                       0.f);
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "Offset compute failed: " << e.what() << std::endl;
+            }
+        }
         if (renderer_) {
-            renderer_->SetGCodeOffset(glm::vec3(0.f));
+            renderer_->SetGCodeOffset(offset);
             renderer_->SetGCodeModel(gm);
         }
         gcodeModel_ = gm;
