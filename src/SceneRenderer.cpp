@@ -21,17 +21,26 @@ SceneRenderer::SceneRenderer(const std::string &printerDefJsonPath)
                 volumeHalfX_ = w * 0.5f;
                 volumeHalfY_ = d * 0.5f;
                 volumeHeight_ = h;
+                try {
+                    centerOrigin_ = o.at("machine_center_is_zero").at("value").get<bool>();
+                } catch (...) {
+                    try { centerOrigin_ = o.at("machine_center_is_zero").at("default_value").get<bool>(); }
+                    catch (...) { centerOrigin_ = false; }
+                }
             } catch (const std::exception &e) {
                 std::cerr << "Warning: JSON parse error in SceneRenderer constructor: "
                           << e.what() << "\nFalling back to defaults.\n";
                 volumeHalfX_ = 100.f; volumeHalfY_ = 100.f; volumeHeight_ = 200.f;
+                centerOrigin_ = false;
             }
         } else {
             std::cerr << "Warning: Could not open printerDefJsonPath: " << printerDefJsonPath << "\n";
             volumeHalfX_ = 100.f; volumeHalfY_ = 100.f; volumeHeight_ = 200.f;
+            centerOrigin_ = false;
         }
     } else {
         volumeHalfX_ = 100.f; volumeHalfY_ = 100.f; volumeHeight_ = 200.f;
+        centerOrigin_ = false;
     }
 
     InitializeDefaultTexture();
@@ -134,7 +143,8 @@ void SceneRenderer::RenderGridAndVolume()
 
 void SceneRenderer::RenderAxes()
 {
-    axesRenderer_.Render(viewMatrix_, projectionMatrix_, glm::vec3(-volumeHalfX_, -volumeHalfY_, 0.f));
+    glm::vec3 origin = centerOrigin_ ? glm::vec3(0.f) : glm::vec3(-volumeHalfX_, -volumeHalfY_, 0.f);
+    axesRenderer_.Render(viewMatrix_, projectionMatrix_, origin);
 }
 
 void SceneRenderer::RenderGCodeLayer(int layerIndex)
@@ -142,7 +152,8 @@ void SceneRenderer::RenderGCodeLayer(int layerIndex)
     if (!gcodeModel_ || !gcodeShader_) return;
     gcodeShader_->use();
     glm::mat4 modelMat(1.0f);
-    modelMat = glm::translate(modelMat, glm::vec3(-volumeHalfX_, -volumeHalfY_, 0.0f) + gcodeOffset_);
+    glm::vec3 baseOffset = centerOrigin_ ? glm::vec3(0.0f) : glm::vec3(-volumeHalfX_, -volumeHalfY_, 0.0f);
+    modelMat = glm::translate(modelMat, baseOffset + gcodeOffset_);
     gcodeShader_->setMat4("model", modelMat);
     gcodeShader_->setMat4("view", viewMatrix_);
     gcodeShader_->setMat4("projection", projectionMatrix_);
@@ -154,7 +165,8 @@ void SceneRenderer::RenderGCodeUpToLayer(int maxLayerIndex)
     if (!gcodeModel_ || !gcodeShader_) return;
     gcodeShader_->use();
     glm::mat4 modelMat(1.0f);
-    modelMat = glm::translate(modelMat, glm::vec3(-volumeHalfX_, -volumeHalfY_, 0.0f) + gcodeOffset_);
+    glm::vec3 baseOffset = centerOrigin_ ? glm::vec3(0.0f) : glm::vec3(-volumeHalfX_, -volumeHalfY_, 0.0f);
+    modelMat = glm::translate(modelMat, baseOffset + gcodeOffset_);
     gcodeShader_->setMat4("model", modelMat);
     gcodeShader_->setMat4("view", viewMatrix_);
     gcodeShader_->setMat4("projection", projectionMatrix_);

@@ -387,8 +387,12 @@ void UIManager::sliceActiveModel() {
             slicingMessage_ = "model_settings.json not found.";
         }
         modelManager_.ExportTransformedModel(slicingModelIndex_, pendingResizedPath_);
-        float offX = renderer_ ? renderer_->GetBedHalfWidth()  : 0.f;
-        float offY = renderer_ ? renderer_->GetBedHalfDepth() : 0.f;
+        float offX = 0.f;
+        float offY = 0.f;
+        if (renderer_ && !renderer_->IsCenterOrigin()) {
+            offX = renderer_->GetBedHalfWidth();
+            offY = renderer_->GetBedHalfDepth();
+        }
 
         // Reload settings from disk before applying overrides
         loadModelSettings();
@@ -511,8 +515,12 @@ void UIManager::openModelPropertiesDialog() {
             if (mdl) {
                 glm::vec3 localCenter = mdl->computeMassCenter();
                 glm::vec3 worldCenter = glm::vec3(modelManager_.GetTransform(activeModel_)->getMatrix() * glm::vec4(localCenter, 1.0f));
-                float bedX = worldCenter.x + renderer_->GetBedHalfWidth();
-                float bedY = worldCenter.y + renderer_->GetBedHalfDepth();
+                float bedX = worldCenter.x;
+                float bedY = worldCenter.y;
+                if (!renderer_->IsCenterOrigin()) {
+                    bedX += renderer_->GetBedHalfWidth();
+                    bedY += renderer_->GetBedHalfDepth();
+                }
                 ImGui::Text("Mass Center XY (mm): %.2f, %.2f", bedX, bedY);
             }
         }

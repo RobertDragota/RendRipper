@@ -8,6 +8,7 @@ Application::Application(int w, int h, const char* title)
       ui_(modelManager_, renderer_.get(), gizmo_, camera_, window_->GetWindow()) {
     if (renderer_) {
         renderer_->SetViewportSize(width_, height_);
+        renderer_->SetCenterOrigin(true);
     }
 }
 
