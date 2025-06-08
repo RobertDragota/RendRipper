@@ -5,6 +5,8 @@
 #include <assimp/scene.h>
 #include <memory>
 #include <stdexcept>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 #include "MeshRepairer.h"
 
@@ -99,13 +101,18 @@ void ModelManager::UpdateDimensions(int index) {
     meshDimensions_[index] = base * sc;
 }
 
-void ModelManager::ExportTransformedModel(int index, const std::string &outPath) const {
+void ModelManager::ExportTransformedModel(int index, const std::string &outPath,
+                                          bool includeTranslation) const {
     if (index < 0 || index >= static_cast<int>(models_.size())) return;
 
     const Model &model = *models_[index];
     const Transform &tf = *transforms_[index];
 
-    glm::mat4 mat = tf.getMatrix();
+    glm::mat4 mat(1.0f);
+    if (includeTranslation)
+        mat = glm::translate(mat, tf.translation);
+    mat *= glm::toMat4(tf.rotationQuat);
+    mat = glm::scale(mat, tf.scale);
     glm::mat3 normalMat = glm::transpose(glm::inverse(glm::mat3(mat)));
 
     auto scene = std::make_unique<aiScene>();
@@ -157,4 +164,37 @@ void ModelManager::ExportTransformedModel(int index, const std::string &outPath)
     if (ret != aiReturn_SUCCESS) {
         throw std::runtime_error(std::string("Assimp export error: ") + exporter.GetErrorString());
     }
+}
+
+glm::vec3 ModelManager::GetWorldCenter(int index) const {
+    if (index < 0 || index >= static_cast<int>(models_.size())) return glm::vec3(0.0f);
+    const Model* mdl = models_[index].get();
+    const Transform* tf = transforms_[index].get();
+    if (!mdl || !tf) return glm::vec3(0.0f);
+    glm::vec4 wc = tf->getMatrix() * glm::vec4(mdl->center, 1.0f);
+    return glm::vec3(wc);
+}
+
+bool ModelManager::FitsInBed(int index, float bedHalfX, float bedHalfY) const {
+    if (index < 0 || index >= static_cast<int>(models_.size())) return false;
+    const Model* mdl = models_[index].get();
+    const Transform* tf = transforms_[index].get();
+    if (!mdl || !tf) return false;
+    glm::mat4 mat = tf->getMatrix();
+    glm::vec3 corners[8] = {
+        {mdl->minBounds.x, mdl->minBounds.y, mdl->minBounds.z},
+        {mdl->maxBounds.x, mdl->minBounds.y, mdl->minBounds.z},
+        {mdl->minBounds.x, mdl->maxBounds.y, mdl->minBounds.z},
+        {mdl->maxBounds.x, mdl->maxBounds.y, mdl->minBounds.z},
+        {mdl->minBounds.x, mdl->minBounds.y, mdl->maxBounds.z},
+        {mdl->maxBounds.x, mdl->minBounds.y, mdl->maxBounds.z},
+        {mdl->minBounds.x, mdl->maxBounds.y, mdl->maxBounds.z},
+        {mdl->maxBounds.x, mdl->maxBounds.y, mdl->maxBounds.z}
+    };
+    for (auto &c : corners) {
+        glm::vec3 wc = glm::vec3(mat * glm::vec4(c, 1.0f));
+        if (wc.x < -bedHalfX || wc.x > bedHalfX || wc.y < -bedHalfY || wc.y > bedHalfY)
+            return false;
+    }
+    return true;
 }
