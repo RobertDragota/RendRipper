@@ -279,8 +279,8 @@ void UIManager::sliceActiveModel()
             slicingMessage_ = "model_settings.json not found.";
             }
         modelManager_.ExportTransformedModel(slicingModelIndex_, pendingResizedPath_);
-        float offX = renderer_ ? renderer_->GetBedHalfWidth() : 0.f;
-        float offY = renderer_ ? renderer_->GetBedHalfDepth() : 0.f;
+        float offX = renderer_ ? renderer_->GetBedHalfWidth() + renderer_->GetPlatformOffset().x : 0.f;
+        float offY = renderer_ ? renderer_->GetBedHalfDepth() + renderer_->GetPlatformOffset().z : 0.f;
 
         std::cout<< "offX: " << offX << ", offY: " << offY << std::endl;
 
@@ -430,8 +430,8 @@ void UIManager::openModelPropertiesDialog()
                 glm::vec3 localCenter = mdl->center;
                 glm::vec3 worldCenter = glm::vec3(
                     modelManager_.GetTransform(activeModel_)->getMatrix() * glm::vec4(localCenter, 1.0f));
-                float bedX = worldCenter.x + renderer_->GetBedHalfWidth();
-                float bedY = worldCenter.y + renderer_->GetBedHalfDepth();
+                float bedX = worldCenter.x + renderer_->GetBedHalfWidth() + renderer_->GetPlatformOffset().x;
+                float bedY = worldCenter.y + renderer_->GetBedHalfDepth() + renderer_->GetPlatformOffset().z;
                 ImGui::Text("Slice Reference XY (mm): %.2f, %.2f", bedX, bedY);
                 }
             }
@@ -450,12 +450,20 @@ void UIManager::openModelPropertiesDialog()
             ImGui::TextUnformatted("Translation");
             ImGui::TableSetColumnIndex(1);
             ImGui::SetNextItemWidth(-FLT_MIN);
-            if (ImGui::DragFloat("##TransX", &tf.translation.x, 0.01f))
+            float dispX = tf.translation.x + renderer_->GetBedHalfWidth() + renderer_->GetPlatformOffset().x;
+            if (ImGui::DragFloat("##TransX", &dispX, 0.01f))
+                {
+                tf.translation.x = dispX - renderer_->GetBedHalfWidth() - renderer_->GetPlatformOffset().x;
                 changed = true;
+                }
             ImGui::TableSetColumnIndex(2);
             ImGui::SetNextItemWidth(-FLT_MIN);
-            if (ImGui::DragFloat("##TransY", &tf.translation.y, 0.01f))
+            float dispY = tf.translation.y + renderer_->GetBedHalfDepth() + renderer_->GetPlatformOffset().z;
+            if (ImGui::DragFloat("##TransY", &dispY, 0.01f))
+                {
+                tf.translation.y = dispY - renderer_->GetBedHalfDepth() - renderer_->GetPlatformOffset().z;
                 changed = true;
+                }
             ImGui::TableSetColumnIndex(3);
             ImGui::SetNextItemWidth(-FLT_MIN);
             if (ImGui::DragFloat("##TransZ", &tf.translation.z, 0.01f))
@@ -752,9 +760,10 @@ void UIManager::finalizeSlicing()
                     double posX = ov["mesh_position_x"]["value"].get<double>();
                     double posY = ov["mesh_position_y"]["value"].get<double>();
                     glm::vec3 c = gm->GetCenter();
-                    offset = glm::vec3(static_cast<float>(posX - c.x),
-                                       static_cast<float>(posY - c.y),
-                                       0.f);
+                    offset = glm::vec3(
+                        static_cast<float>(renderer_->GetBedHalfWidth() + renderer_->GetPlatformOffset().x - c.x),
+                        static_cast<float>(renderer_->GetBedHalfDepth() + renderer_->GetPlatformOffset().z - c.y),
+                        0.f);
                     }
                 }
             catch (const std::exception &e)
