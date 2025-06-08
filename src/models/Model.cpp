@@ -20,7 +20,9 @@ Model::Model( std::string& path) {
 
 }
 
+
 Model::~Model() = default;
+
 
 Model::Model(Model&& o) noexcept
         : directory(std::move(o.directory)), meshes(std::move(o.meshes)),
