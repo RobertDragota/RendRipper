@@ -810,13 +810,21 @@ void UIManager::handleViewportInput(glm::mat4 &viewMatrix,
         getActiveModel(viewMatrix, viewportPos, viewportSize);
     }
 
-    if (ImGui::IsMouseDown(ImGuiMouseButton_Right) && !ImGuizmo::IsUsing()) {
-        ImVec2 delta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right, 0.0f);
+    auto rotateCamera = [&](ImGuiMouseButton btn) {
+        ImVec2 delta = ImGui::GetMouseDragDelta(btn, 0.0f);
         constexpr float sensitivity = 0.2f;
         camera_.yaw += delta.x * sensitivity;
         camera_.pitch += delta.y * sensitivity;
         camera_.pitch = glm::clamp(camera_.pitch, -89.0f, 89.0f);
-        ImGui::ResetMouseDragDelta(ImGuiMouseButton_Right);
+        ImGui::ResetMouseDragDelta(btn);
+    };
+
+    if (ImGui::IsMouseDown(ImGuiMouseButton_Right) && !ImGuizmo::IsUsing()) {
+        rotateCamera(ImGuiMouseButton_Right);
+    }
+
+    if (ImGui::IsMouseDown(ImGuiMouseButton_Middle) && !ImGuizmo::IsUsing()) {
+        rotateCamera(ImGuiMouseButton_Middle);
     }
 
     ImGuiIO &io = ImGui::GetIO();
