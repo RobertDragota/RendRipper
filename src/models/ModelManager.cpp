@@ -6,6 +6,10 @@
 #include <memory>
 #include <stdexcept>
 
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/quaternion.hpp>
+
+
 #include "MeshRepairer.h"
 
 int ModelManager::LoadModel(const std::string &modelPath) {
@@ -99,13 +103,16 @@ void ModelManager::UpdateDimensions(int index) {
     meshDimensions_[index] = base * sc;
 }
 
+
 void ModelManager::ExportTransformedModel(int index, const std::string &outPath) const {
+
     if (index < 0 || index >= static_cast<int>(models_.size())) return;
 
     const Model &model = *models_[index];
     const Transform &tf = *transforms_[index];
 
     glm::mat4 mat = tf.getMatrix();
+
     glm::mat3 normalMat = glm::transpose(glm::inverse(glm::mat3(mat)));
 
     auto scene = std::make_unique<aiScene>();
@@ -158,3 +165,4 @@ void ModelManager::ExportTransformedModel(int index, const std::string &outPath)
         throw std::runtime_error(std::string("Assimp export error: ") + exporter.GetErrorString());
     }
 }
+
