@@ -27,6 +27,8 @@ public:
     Axis determineUpAxis() const;
 
     std::vector<glm::vec3> getAllPositions() const;
+    /// Compute an approximate mass center by averaging all vertex positions
+    glm::vec3 computeMassCenter() const;
 
 
     const std::vector<Mesh>& getMeshes() const noexcept { return meshes; }

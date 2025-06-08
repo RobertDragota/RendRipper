@@ -171,3 +171,16 @@ std::vector<glm::vec3> Model::getAllPositions() const {
     }
     return out;
 }
+
+glm::vec3 Model::computeMassCenter() const {
+    glm::vec3 sum(0.0f);
+    size_t count = 0;
+    for (const auto& mesh : meshes) {
+        for (const auto& v : mesh.getVertices()) {
+            sum += v.pos;
+            ++count;
+        }
+    }
+    if (count == 0) return glm::vec3(0.0f);
+    return sum / static_cast<float>(count);
+}
