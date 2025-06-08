@@ -31,16 +31,18 @@
 
 using json = nlohmann::json;
 
+namespace {
 // Utility: ray-sphere intersection using GLM helpers
-static bool RayIntersectSphere(const glm::vec3& origin,
-                               const glm::vec3& dir,
-                               const glm::vec3& center,
-                               float radius,
-                               float& t)
+bool RayIntersectSphere(const glm::vec3 &origin,
+                        const glm::vec3 &dir,
+                        const glm::vec3 &center,
+                        float radius,
+                        float &t)
 {
     // GLM requires the squared radius and a normalized direction
     return glm::intersectRaySphere(origin, glm::normalize(dir),
                                    center, radius * radius, t);
+}
 }
 
 
@@ -80,23 +82,7 @@ void UIManager::Frame() {
     }
     ImVec2 actualViewportTopLeft = ImGui::GetItemRectMin();
     if (ImGui::IsWindowHovered()) {
-        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGuizmo::IsOver() && !ImGuizmo::IsUsing()) {
-            getActiveModel(viewMat, actualViewportTopLeft, viewportSize);
-        }
-        if (ImGui::IsMouseDown(ImGuiMouseButton_Right) && !ImGuizmo::IsUsing()) {
-            ImVec2 delta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right, 0.0f);
-            float sensitivity = 0.2f;
-            camera_.yaw += delta.x * sensitivity;
-            camera_.pitch += delta.y * sensitivity;
-            camera_.pitch = glm::clamp(camera_.pitch, -89.0f, 89.0f);
-            ImGui::ResetMouseDragDelta(ImGuiMouseButton_Right);
-        }
-        ImGuiIO &io = ImGui::GetIO();
-        if (io.MouseWheel != 0.0f && !ImGuizmo::IsUsing()) {
-            float zoomSpeed = 5.0f;
-            camera_.distance -= io.MouseWheel * zoomSpeed;
-            camera_.distance = glm::clamp(camera_.distance, 2.0f, 800.0f);
-        }
+        handleViewportInput(viewMat, actualViewportTopLeft, viewportSize);
     }
     ImGuizmo::SetOrthographic(false);
     ImGuizmo::SetDrawlist();
@@ -807,6 +793,33 @@ void UIManager::saveModelSettings() {
         out << modelSettings_.dump(4);
     } catch (const std::exception& e) {
         std::cerr << "Failed to save model settings: " << e.what() << std::endl;
+    }
+}
+
+void UIManager::handleViewportInput(glm::mat4 &viewMatrix,
+                                    const ImVec2 &viewportPos,
+                                    const ImVec2 &viewportSize)
+{
+    if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) &&
+        !ImGuizmo::IsOver() && !ImGuizmo::IsUsing())
+    {
+        getActiveModel(viewMatrix, viewportPos, viewportSize);
+    }
+
+    if (ImGui::IsMouseDown(ImGuiMouseButton_Right) && !ImGuizmo::IsUsing()) {
+        ImVec2 delta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right, 0.0f);
+        constexpr float sensitivity = 0.2f;
+        camera_.yaw += delta.x * sensitivity;
+        camera_.pitch += delta.y * sensitivity;
+        camera_.pitch = glm::clamp(camera_.pitch, -89.0f, 89.0f);
+        ImGui::ResetMouseDragDelta(ImGuiMouseButton_Right);
+    }
+
+    ImGuiIO &io = ImGui::GetIO();
+    if (io.MouseWheel != 0.0f && !ImGuizmo::IsUsing()) {
+        constexpr float zoomSpeed = 5.0f;
+        camera_.distance -= io.MouseWheel * zoomSpeed;
+        camera_.distance = glm::clamp(camera_.distance, 2.0f, 800.0f);
     }
 }
 

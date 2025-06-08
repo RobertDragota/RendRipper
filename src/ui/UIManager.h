@@ -45,6 +45,9 @@ private:
     void showErrorModal(std::string &message);
     void getActiveModel(glm::mat4 &viewMatrix, const ImVec2& viewportScreenPos, const ImVec2& viewportSize);
     void renderModels(glm::mat4 &viewMatrix);
+    void handleViewportInput(glm::mat4 &viewMatrix,
+                             const ImVec2 &viewportPos,
+                             const ImVec2 &viewportSize);
 
     ModelManager& modelManager_;
     SceneRenderer* renderer_;
