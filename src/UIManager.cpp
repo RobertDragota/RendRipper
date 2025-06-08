@@ -364,6 +364,14 @@ void UIManager::sliceActiveModel() {
     if (activeModel_ < 0 || activeModel_ >= static_cast<int>(modelManager_.Count()))
         return;
 
+    float hx = renderer_ ? renderer_->GetBedHalfWidth() : 0.f;
+    float hy = renderer_ ? renderer_->GetBedHalfDepth() : 0.f;
+    if (!modelManager_.FitsInBed(activeModel_, hx, hy)) {
+        errorModalMessage_ = "Model exceeds printer volume.";
+        showErrorModal_ = true;
+        return;
+    }
+
     slicingModelIndex_ = activeModel_;
     pendingStlPath_ = modelManager_.GetPath(activeModel_);
     std::filesystem::path base(pendingStlPath_);
@@ -506,6 +514,7 @@ void UIManager::openModelPropertiesDialog() {
         glm::vec3 dims = modelManager_.GetDimensions(activeModel_);
         ImGui::Text("Real Dimensions (mm): %.2f x %.2f x %.2f", dims.x, dims.y, dims.z);
 
+
         auto& tf = *modelManager_.GetTransform(activeModel_);
         glm::vec3 wc = modelManager_.GetWorldCenter(activeModel_);
         float hx = renderer_ ? renderer_->GetBedHalfWidth() : 0.f;
@@ -523,8 +532,12 @@ void UIManager::openModelPropertiesDialog() {
             ImGui::TableHeadersRow();
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0); ImGui::TextUnformatted("Translation");
-            ImGui::TableSetColumnIndex(1); ImGui::SetNextItemWidth(-FLT_MIN); if (ImGui::DragFloat("##TransX", &tf.translation.x, 0.01f)) changed = true;
-            ImGui::TableSetColumnIndex(2); ImGui::SetNextItemWidth(-FLT_MIN); if (ImGui::DragFloat("##TransY", &tf.translation.y, 0.01f)) changed = true;
+            float transX = tf.translation.x + hx;
+            float transY = tf.translation.y + hy;
+            ImGui::TableSetColumnIndex(1); ImGui::SetNextItemWidth(-FLT_MIN);
+            if (ImGui::DragFloat("##TransX", &transX, 0.01f)) { tf.translation.x = transX - hx; changed = true; }
+            ImGui::TableSetColumnIndex(2); ImGui::SetNextItemWidth(-FLT_MIN);
+            if (ImGui::DragFloat("##TransY", &transY, 0.01f)) { tf.translation.y = transY - hy; changed = true; }
             ImGui::TableSetColumnIndex(3); ImGui::SetNextItemWidth(-FLT_MIN); if (ImGui::DragFloat("##TransZ", &tf.translation.z, 0.01f)) changed = true;
             glm::vec3 euler = tf.getEulerAngles();
             ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0); ImGui::TextUnformatted("Rotation");
@@ -725,12 +738,9 @@ void UIManager::finalizeSlicing() {
         }
 
         if (renderer_) {
-            glm::vec3 gcodeCenter = gm->GetCenter() - glm::vec3(bedX, bedY, 0.f);
-            glm::vec3 modelCenter(0.f);
-            if (slicingModelIndex_ >= 0)
-                modelCenter = modelManager_.GetWorldCenter(slicingModelIndex_);
-            glm::vec3 offset = modelCenter - gcodeCenter;
-            renderer_->SetGCodeOffset(offset);
+
+            renderer_->SetGCodeOffset(glm::vec3(0.0f));
+
             renderer_->SetGCodeModel(gm);
         }
         gcodeModel_ = gm;
