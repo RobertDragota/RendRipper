@@ -732,6 +732,11 @@ void UIManager::finalizeSlicing() {
                     offset = glm::vec3(static_cast<float>(posX - c.x),
                                        static_cast<float>(posY - c.y),
                                        0.f);
+                    if (renderer_) {
+                        float worldX = static_cast<float>(posX - renderer_->GetBedHalfWidth());
+                        float worldY = static_cast<float>(posY - renderer_->GetBedHalfDepth());
+                        renderer_->SetBedOrigin(glm::vec3(worldX, worldY, 0.f));
+                    }
                 }
             } catch (const std::exception& e) {
                 std::cerr << "Offset compute failed: " << e.what() << std::endl;

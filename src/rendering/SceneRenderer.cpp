@@ -127,14 +127,15 @@ void SceneRenderer::RenderModel(const Model &model, Shader &shader, const Transf
 
 void SceneRenderer::RenderGridAndVolume()
 {
-    gridRenderer_.Render(viewMatrix_, projectionMatrix_);
-    volumeBoxRenderer_.Render(viewMatrix_, projectionMatrix_, gridColor_);
+    gridRenderer_.Render(viewMatrix_, projectionMatrix_, bedOrigin_);
+    volumeBoxRenderer_.Render(viewMatrix_, projectionMatrix_, gridColor_, bedOrigin_);
     RenderAxes();
 }
 
 void SceneRenderer::RenderAxes()
 {
-    axesRenderer_.Render(viewMatrix_, projectionMatrix_, glm::vec3(-volumeHalfX_, -volumeHalfY_, 0.f));
+    axesRenderer_.Render(viewMatrix_, projectionMatrix_,
+                         glm::vec3(-volumeHalfX_, -volumeHalfY_, 0.f) + bedOrigin_);
 }
 
 void SceneRenderer::RenderGCodeLayer(int layerIndex)
