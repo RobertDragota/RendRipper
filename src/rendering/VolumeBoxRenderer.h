@@ -10,7 +10,7 @@ public:
     ~VolumeBoxRenderer();
 
     void Init(float halfX, float halfY, float height);
-    void Render(const glm::mat4 &view, const glm::mat4 &proj, const glm::vec3 &color);
+    void Render(const glm::mat4 &view, const glm::mat4 &proj, const glm::vec3 &color, const glm::vec3 &offset = glm::vec3(0.0f));
 
 private:
     GLuint vao_ = 0, vbo_ = 0;

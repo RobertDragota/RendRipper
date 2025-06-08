@@ -135,14 +135,17 @@ void SceneRenderer::RenderModel(const Model &model, Shader &shader, const Transf
 
 void SceneRenderer::RenderGridAndVolume()
 {
-    gridRenderer_.Render(viewMatrix_, projectionMatrix_);
-    volumeBoxRenderer_.Render(viewMatrix_, projectionMatrix_, gridColor_);
+    gridRenderer_.Render(viewMatrix_, projectionMatrix_, platformOffset_);
+    volumeBoxRenderer_.Render(viewMatrix_, projectionMatrix_, gridColor_, platformOffset_);
     RenderAxes();
 }
 
 void SceneRenderer::RenderAxes()
 {
-    axesRenderer_.Render(viewMatrix_, projectionMatrix_, glm::vec3(-volumeHalfX_, -volumeHalfY_, 0.f));
+    axesRenderer_.Render(viewMatrix_, projectionMatrix_,
+                         glm::vec3(platformOffset_.x - volumeHalfX_,
+                                   platformOffset_.z - volumeHalfY_,
+                                   platformOffset_.y));
 }
 
 void SceneRenderer::RenderGCodeLayer(int layerIndex)
@@ -150,7 +153,11 @@ void SceneRenderer::RenderGCodeLayer(int layerIndex)
     if (!gcodeModel_ || !gcodeShader_) return;
     gcodeShader_->use();
     glm::mat4 modelMat(1.0f);
-    modelMat = glm::translate(modelMat, glm::vec3(-volumeHalfX_, -volumeHalfY_, 0.0f) + gcodeOffset_);
+    modelMat = glm::translate(modelMat,
+                              glm::vec3(platformOffset_.x - volumeHalfX_,
+                                        platformOffset_.z - volumeHalfY_,
+                                        platformOffset_.y) +
+                                  gcodeOffset_);
     gcodeShader_->setMat4("model", modelMat);
     gcodeShader_->setMat4("view", viewMatrix_);
     gcodeShader_->setMat4("projection", projectionMatrix_);
@@ -162,7 +169,11 @@ void SceneRenderer::RenderGCodeUpToLayer(int maxLayerIndex)
     if (!gcodeModel_ || !gcodeShader_) return;
     gcodeShader_->use();
     glm::mat4 modelMat(1.0f);
-    modelMat = glm::translate(modelMat, glm::vec3(-volumeHalfX_, -volumeHalfY_, 0.0f) + gcodeOffset_);
+    modelMat = glm::translate(modelMat,
+                              glm::vec3(platformOffset_.x - volumeHalfX_,
+                                        platformOffset_.z - volumeHalfY_,
+                                        platformOffset_.y) +
+                                  gcodeOffset_);
     gcodeShader_->setMat4("model", modelMat);
     gcodeShader_->setMat4("view", viewMatrix_);
     gcodeShader_->setMat4("projection", projectionMatrix_);
