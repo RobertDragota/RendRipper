@@ -180,19 +180,20 @@ bool ModelManager::FitsInBed(int index, float bedHalfX, float bedHalfY) const {
     const Model* mdl = models_[index].get();
     const Transform* tf = transforms_[index].get();
     if (!mdl || !tf) return false;
-    glm::mat4 mat = tf->getMatrix();
+    glm::mat4 rotTrans = glm::translate(glm::mat4(1.0f), tf->translation) *
+                          glm::toMat4(tf->rotationQuat);
     glm::vec3 corners[8] = {
-        {mdl->minBounds.x, mdl->minBounds.y, mdl->minBounds.z},
-        {mdl->maxBounds.x, mdl->minBounds.y, mdl->minBounds.z},
-        {mdl->minBounds.x, mdl->maxBounds.y, mdl->minBounds.z},
-        {mdl->maxBounds.x, mdl->maxBounds.y, mdl->minBounds.z},
-        {mdl->minBounds.x, mdl->minBounds.y, mdl->maxBounds.z},
-        {mdl->maxBounds.x, mdl->minBounds.y, mdl->maxBounds.z},
-        {mdl->minBounds.x, mdl->maxBounds.y, mdl->maxBounds.z},
-        {mdl->maxBounds.x, mdl->maxBounds.y, mdl->maxBounds.z}
+        {mdl->minBounds.x * tf->scale.x, mdl->minBounds.y * tf->scale.y, mdl->minBounds.z * tf->scale.z},
+        {mdl->maxBounds.x * tf->scale.x, mdl->minBounds.y * tf->scale.y, mdl->minBounds.z * tf->scale.z},
+        {mdl->minBounds.x * tf->scale.x, mdl->maxBounds.y * tf->scale.y, mdl->minBounds.z * tf->scale.z},
+        {mdl->maxBounds.x * tf->scale.x, mdl->maxBounds.y * tf->scale.y, mdl->minBounds.z * tf->scale.z},
+        {mdl->minBounds.x * tf->scale.x, mdl->minBounds.y * tf->scale.y, mdl->maxBounds.z * tf->scale.z},
+        {mdl->maxBounds.x * tf->scale.x, mdl->minBounds.y * tf->scale.y, mdl->maxBounds.z * tf->scale.z},
+        {mdl->minBounds.x * tf->scale.x, mdl->maxBounds.y * tf->scale.y, mdl->maxBounds.z * tf->scale.z},
+        {mdl->maxBounds.x * tf->scale.x, mdl->maxBounds.y * tf->scale.y, mdl->maxBounds.z * tf->scale.z}
     };
     for (auto &c : corners) {
-        glm::vec3 wc = glm::vec3(mat * glm::vec4(c, 1.0f));
+        glm::vec3 wc = glm::vec3(rotTrans * glm::vec4(c, 1.0f));
         if (wc.x < -bedHalfX || wc.x > bedHalfX || wc.y < -bedHalfY || wc.y > bedHalfY)
             return false;
     }
