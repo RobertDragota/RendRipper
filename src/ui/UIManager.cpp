@@ -15,6 +15,7 @@
 #include "MeshRepairer.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <cmath>
 #include <filesystem>
 #include <iostream>
 #include <functional>
@@ -824,7 +825,21 @@ void UIManager::handleViewportInput(glm::mat4 &viewMatrix,
     }
 
     if (ImGui::IsMouseDown(ImGuiMouseButton_Middle) && !ImGuizmo::IsUsing()) {
-        rotateCamera(ImGuiMouseButton_Middle);
+
+        ImVec2 delta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Middle, 0.0f);
+        constexpr float panSpeed = 0.1f;
+        float rP = glm::radians(camera_.pitch);
+        float rY = glm::radians(camera_.yaw);
+        glm::vec3 forward = glm::normalize(glm::vec3(cos(rP) * cos(rY),
+                                                    cos(rP) * sin(rY),
+                                                    sin(rP)));
+        glm::vec3 worldUp(0.f, 0.f, 1.f);
+        glm::vec3 right = glm::normalize(glm::cross(forward, worldUp));
+        glm::vec3 up = glm::normalize(glm::cross(right, forward));
+        camera_.pivot -= right * delta.x * panSpeed;
+        camera_.pivot += up * delta.y * panSpeed;
+        ImGui::ResetMouseDragDelta(ImGuiMouseButton_Middle);
+
     }
 
     ImGuiIO &io = ImGui::GetIO();
