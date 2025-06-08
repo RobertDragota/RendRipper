@@ -11,6 +11,7 @@
 
 
 #include "MeshRepairer.h"
+#include "ShaderCache.h"
 
 int ModelManager::LoadModel(const std::string &modelPath) {
     std::string directory = modelPath.substr(0, modelPath.find_last_of("/\\"));
@@ -52,8 +53,9 @@ int ModelManager::LoadModel(const std::string &modelPath) {
     t->scale = glm::vec3(scaleFactor);
     t->rotationQuat = glm::quat(1,0,0,0);
     transforms_.push_back(std::move(t));
-    shaders_.emplace_back(std::make_unique<Shader>("../../resources/shaders/model_shader.vert",
-                                                  "../../resources/shaders/model_shader.frag"));
+    shaders_.emplace_back(
+        ShaderCache::Get("../../resources/shaders/model_shader.vert",
+                        "../../resources/shaders/model_shader.frag"));
     models_.emplace_back(std::move(mPtr));
     int idx = static_cast<int>(models_.size()) - 1;
     EnforceGridConstraint(idx);

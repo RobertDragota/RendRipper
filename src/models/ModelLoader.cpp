@@ -1,5 +1,6 @@
 #include "ModelLoader.h"
 #include "TextureLoader.h"
+#include <memory>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <stdexcept>
@@ -31,7 +32,7 @@ Mesh ModelLoader::processMesh(aiMesh* mesh, const aiScene* scene, const std::str
 {
     std::vector<Vertex> vertices;
     std::vector<unsigned> indices;
-    std::vector<Texture> textures;
+    std::vector<std::shared_ptr<Texture>> textures;
 
     for (unsigned i = 0; i < mesh->mNumVertices; ++i) {
         Vertex v;

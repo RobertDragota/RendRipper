@@ -1,7 +1,7 @@
 #include "Mesh.h"
 #include <glad/glad.h>
 
-Mesh::Mesh(std::vector<Vertex> v, std::vector<unsigned> i, std::vector<Texture> t)
+Mesh::Mesh(std::vector<Vertex> v, std::vector<unsigned> i, std::vector<std::shared_ptr<Texture>> t)
         : vertices(std::move(v)), indices(std::move(i)), textures(std::move(t)),
           VAO(0), VBO(0), EBO(0)
 {
@@ -14,8 +14,6 @@ Mesh::~Mesh() {
     if (VBO) glDeleteBuffers(1, &VBO);
     if (EBO) glDeleteBuffers(1, &EBO);
 
-    for (auto& tex : textures)
-        if (tex.id) glDeleteTextures(1, &tex.id);
 }
 
 Mesh::Mesh(Mesh&& o) noexcept
@@ -31,8 +29,7 @@ Mesh& Mesh::operator=(Mesh&& o) noexcept {
         if (VAO) glDeleteVertexArrays(1, &VAO);
         if (VBO) glDeleteBuffers(1, &VBO);
         if (EBO) glDeleteBuffers(1, &EBO);
-        for (auto& tex : textures)
-            if (tex.id) glDeleteTextures(1, &tex.id);
+
 
         vertices = std::move(o.vertices);
         indices  = std::move(o.indices);
@@ -73,12 +70,12 @@ void Mesh::Draw(const Shader& shader) const {
     for (unsigned i = 0; i < textures.size(); ++i) {
         glActiveTexture(GL_TEXTURE0 + i);
         std::string number;
-        if (textures[i].type == "texture_diffuse")
+        if (textures[i]->type == "texture_diffuse")
             number = std::to_string(diffuseNr++);
         else
             number = std::to_string(specularNr++);
-        shader.setInt(textures[i].type + number, i);
-        glBindTexture(GL_TEXTURE_2D, textures[i].id);
+        shader.setInt(textures[i]->type + number, i);
+        glBindTexture(GL_TEXTURE_2D, textures[i]->id);
     }
     glActiveTexture(GL_TEXTURE0);
     glBindVertexArray(VAO);

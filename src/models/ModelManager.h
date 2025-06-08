@@ -30,7 +30,7 @@ public:
     void UpdateDimensions(int index);
 
 private:
-    std::vector<std::unique_ptr<Shader>> shaders_;
+    std::vector<std::shared_ptr<Shader>> shaders_;
     std::vector<std::unique_ptr<Model>> models_;
     std::vector<std::unique_ptr<Transform>> transforms_;
     std::vector<glm::vec3> meshDimensions_;

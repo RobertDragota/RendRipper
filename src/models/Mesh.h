@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
+#include <memory>
 #include "Shader.h"
 
 struct Vertex {
@@ -10,14 +11,15 @@ struct Vertex {
 };
 
 struct Texture {
-    unsigned int id;
+    unsigned int id = 0;
     std::string type;
     std::string path;
+    ~Texture();
 };
 
 class Mesh {
 public:
-    Mesh(std::vector<Vertex> verts, std::vector<unsigned> idxs, std::vector<Texture> texs);
+    Mesh(std::vector<Vertex> verts, std::vector<unsigned> idxs, std::vector<std::shared_ptr<Texture>> texs);
     ~Mesh();
 
     Mesh(const Mesh&) = delete;
@@ -35,6 +37,6 @@ private:
 
     std::vector<Vertex>  vertices;
     std::vector<unsigned> indices;
-    std::vector<Texture> textures;
+    std::vector<std::shared_ptr<Texture>> textures;
     unsigned int VAO, VBO, EBO;
 };
