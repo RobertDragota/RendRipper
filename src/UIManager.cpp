@@ -400,7 +400,7 @@ void UIManager::sliceActiveModel() {
                 Model* mdl = modelManager_.GetModel(slicingModelIndex_);
                 Transform* tf = modelManager_.GetTransform(slicingModelIndex_);
                 if (mdl && tf) {
-                    glm::vec3 localCenter = mdl->computeMassCenter();
+                    glm::vec3 localCenter = mdl->center;
                     glm::vec3 worldCenter = glm::vec3(tf->getMatrix() * glm::vec4(localCenter, 1.0f));
                     double posX = offX + worldCenter.x;
                     double posY = offY + worldCenter.y;
@@ -516,7 +516,7 @@ void UIManager::openModelPropertiesDialog() {
         if (renderer_) {
             Model* mdl = modelManager_.GetModel(activeModel_);
             if (mdl) {
-                glm::vec3 localCenter = mdl->computeMassCenter();
+                glm::vec3 localCenter = mdl->center;
                 glm::vec3 worldCenter = glm::vec3(modelManager_.GetTransform(activeModel_)->getMatrix() * glm::vec4(localCenter, 1.0f));
                 float bedX = worldCenter.x + renderer_->GetBedHalfWidth();
                 float bedY = worldCenter.y + renderer_->GetBedHalfDepth();

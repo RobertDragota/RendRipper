@@ -97,19 +97,25 @@ void GCodeParser::Parse(const std::string &path,
         if (!std::isnan(Y)) currentPos.y = Y;
         if (!std::isnan(Z)) currentPos.z = Z;
 
-        if (!std::isnan(E) && E > lastExtrusion && hasLastPos) {
-            if (currentLayerIndex < 0) {
-                currentLayerIndex = 0;
-                layerZs.push_back(currentPos.z);
-                layers.emplace_back();
+        if (!std::isnan(E) && hasLastPos) {
+            // Handle extruder resets (e.g., after G92 E0)
+            if (E < lastExtrusion - 0.0001f)
+                lastExtrusion = E;
+            if (E > lastExtrusion) {
+                if (currentLayerIndex < 0) {
+                    currentLayerIndex = 0;
+                    layerZs.push_back(currentPos.z);
+                    layers.emplace_back();
+                }
+                glm::vec3 lightDir = glm::normalize(glm::vec3(0.5f, 0.5f, 1.0f));
+                glm::vec3 dir = glm::normalize(currentPos - lastPos);
+                float intensity = 0.8f + 0.4f * fabs(glm::dot(dir, lightDir));
+                glm::vec3 finalColor = glm::clamp(currentColor * intensity,
+                                                 glm::vec3(0.0f), glm::vec3(1.0f));
+                layers[currentLayerIndex].push_back({lastPos, finalColor});
+                layers[currentLayerIndex].push_back({currentPos, finalColor});
+                lastExtrusion = E;
             }
-            glm::vec3 lightDir = glm::normalize(glm::vec3(0.5f, 0.5f, 1.0f));
-            glm::vec3 dir = glm::normalize(currentPos - lastPos);
-            float intensity = 0.8f + 0.4f * fabs(glm::dot(dir, lightDir));
-            glm::vec3 finalColor = glm::clamp(currentColor * intensity,
-                                             glm::vec3(0.0f), glm::vec3(1.0f));
-            layers[currentLayerIndex].push_back({lastPos, finalColor});
-            layers[currentLayerIndex].push_back({currentPos, finalColor});
         }
 
         if (!std::isnan(E)) {
