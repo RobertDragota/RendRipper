@@ -12,37 +12,39 @@
 
 /// GCodeModel now groups extruding moves by “layer” (unique Z values).
 /// Each layer is one sequence of GL_LINES. You can draw a single layer or all layers up to some index.
-class GCodeModel {
+class GCodeModel
+{
 public:
     /// Constructor: parse the .gcode file immediately.
-    explicit GCodeModel(const std::string& gcodePath);
+    explicit GCodeModel(const std::string &gcodePath);
+
     ~GCodeModel();
 
     /// Draw *only* layer 'layerIndex' (0-based).
     /// Returns false if layerIndex is invalid.
-    bool DrawLayer(int layerIndex, Shader& lineShader) const;
+    bool DrawLayer(int layerIndex, Shader &lineShader) const;
 
     /// Draw all layers from 0..maxLayerIndex inclusive.
     /// If maxLayerIndex < 0, draws all layers.
-    void DrawUpToLayer(int maxLayerIndex, Shader& lineShader) const;
+    void DrawUpToLayer(int maxLayerIndex, Shader &lineShader) const;
 
     /// Number of layers parsed
     int GetLayerCount() const { return static_cast<int>(layerVertexCounts_.size()); }
 
     /// Returns the Z-height (in mm) of each layer index.
     /// That is, layerZs_[i] = the Z coordinate that was first encountered for layer i.
-    const std::vector<float>& GetLayerHeights() const { return layerZs_; }
+    const std::vector<float> &GetLayerHeights() const { return layerZs_; }
 
     /// Accessors for overall bounds and center
-    const glm::vec3& GetBoundsMin() const { return boundsMin_; }
-    const glm::vec3& GetBoundsMax() const { return boundsMax_; }
-    const glm::vec3& GetCenter() const { return center_; }
+    const glm::vec3 &GetBoundsMin() const { return boundsMin_; }
+    const glm::vec3 &GetBoundsMax() const { return boundsMax_; }
+    const glm::vec3 &GetCenter() const { return center_; }
 
 private:
     void computeBounds();
 
-    static constexpr glm::vec3 kModelColor   = glm::vec3(0.8f, 0.8f, 0.8f);
-    static constexpr glm::vec3 kInfillColor  = glm::vec3(0.9f, 0.4f, 0.1f);
+    static constexpr glm::vec3 kModelColor = glm::vec3(0.8f, 0.8f, 0.8f);
+    static constexpr glm::vec3 kInfillColor = glm::vec3(0.9f, 0.4f, 0.1f);
     static constexpr glm::vec3 kSupportColor = glm::vec3(0.1f, 0.5f, 0.9f);
 
     // lineVertices_ is no longer used directly; we bucket segments into layers_.
@@ -56,7 +58,7 @@ private:
 
     // Each layer is now a flat list of ColoredVertex pairs forming line segments
     // layers_[i] = vertices for layer i, in consecutive pairs.
-    std::vector<std::vector<ColoredVertex>> layers_;
+    std::vector<std::vector<ColoredVertex> > layers_;
     std::vector<size_t> layerVertexCounts_;
     std::vector<float> layerZs_;
 

@@ -9,19 +9,25 @@
 #include <memory>
 #include "Transform.h"
 
-
-class IGizmoOperation {
+class IGizmoOperation
+{
 public:
     virtual ~IGizmoOperation() = default;
+
     virtual void Apply(const glm::mat4 &matrix, ITransform &transform) = 0;
 };
 
-class GizmoController {
+class GizmoController
+{
 public:
     GizmoController();
-    void Manipulate(const glm::mat4 &view,
-                    const glm::mat4 &proj,
-                    ITransform &transform);
+
+    void Manipulate
+    (
+        const glm::mat4 &view,
+        const glm::mat4 &proj,
+        ITransform &transform
+    );
 
     ImGuizmo::OPERATION GetCurrentMode() const;
 
@@ -31,7 +37,7 @@ private:
     void updateOperation();
 
     ImGuizmo::OPERATION currentOp_;
-    ImGuizmo::MODE      currentMode_;
+    ImGuizmo::MODE currentMode_;
 
     std::unique_ptr<IGizmoOperation> operation_;
 };

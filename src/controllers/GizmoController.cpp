@@ -9,46 +9,58 @@
 #include <imgui.h>
 #include <ImGuizmo.h>
 
-namespace {
-
-void DecomposeMatrix(const glm::mat4 &matrix,
-                     glm::vec3 &translation,
-                     glm::vec3 &scale,
-                     glm::quat &rotation)
+namespace
 {
-    translation = glm::vec3(matrix[3]);
-    scale.x = glm::length(glm::vec3(matrix[0]));
-    scale.y = glm::length(glm::vec3(matrix[1]));
-    scale.z = glm::length(glm::vec3(matrix[2]));
-    glm::mat3 rot;
-    rot[0] = glm::vec3(matrix[0]) / scale.x;
-    rot[1] = glm::vec3(matrix[1]) / scale.y;
-    rot[2] = glm::vec3(matrix[2]) / scale.z;
-    rotation = glm::quat_cast(rot);
-}
 
-class BasicOperation : public IGizmoOperation {
-public:
-    void Apply(const glm::mat4 &m, ITransform &t) override
+    void DecomposeMatrix
+    (
+        const glm::mat4 &matrix,
+        glm::vec3 &translation,
+        glm::vec3 &scale,
+        glm::quat &rotation
+    )
     {
-        glm::vec3 tr, sc; glm::quat rot;
-        DecomposeMatrix(m, tr, sc, rot);
-        t.setTranslation(tr);
-        t.setScale(sc);
-        t.setRotationQuat(rot);
+        translation = glm::vec3(matrix[3]);
+        scale.x = glm::length(glm::vec3(matrix[0]));
+        scale.y = glm::length(glm::vec3(matrix[1]));
+        scale.z = glm::length(glm::vec3(matrix[2]));
+        glm::mat3 rot;
+        rot[0] = glm::vec3(matrix[0]) / scale.x;
+        rot[1] = glm::vec3(matrix[1]) / scale.y;
+        rot[2] = glm::vec3(matrix[2]) / scale.z;
+        rotation = glm::quat_cast(rot);
     }
-};
+
+    class BasicOperation : public IGizmoOperation
+    {
+    public:
+        void Apply(const glm::mat4 &m, ITransform &t) override
+        {
+            glm::vec3 tr, sc;
+            glm::quat rot;
+            DecomposeMatrix(m, tr, sc, rot);
+            t.setTranslation(tr);
+            t.setScale(sc);
+            t.setRotationQuat(rot);
+        }
+    };
 
 } // namespace
 
 GizmoController::GizmoController()
-        : currentOp_(ImGuizmo::TRANSLATE),
-          currentMode_(ImGuizmo::LOCAL),
-          operation_(std::make_unique<BasicOperation>()) {}
+    : currentOp_(ImGuizmo::TRANSLATE),
+      currentMode_(ImGuizmo::LOCAL),
+      operation_(std::make_unique<BasicOperation>())
+{
+}
 
-void GizmoController::Manipulate(const glm::mat4 &view,
-                                 const glm::mat4 &proj,
-                                 ITransform &transform) {
+void GizmoController::Manipulate
+(
+    const glm::mat4 &view,
+    const glm::mat4 &proj,
+    ITransform &transform
+)
+{
     ImGuizmo::SetOrthographic(false);
     ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
     ImVec2 windowPos = ImGui::GetWindowPos();
@@ -67,23 +79,29 @@ void GizmoController::Manipulate(const glm::mat4 &view,
     memcpy(m, glm::value_ptr(model), sizeof(m));
 
     // optional hotkeys
-    if (ImGui::IsKeyPressed(ImGuiKey_T)) currentOp_ = ImGuizmo::TRANSLATE;
-    if (ImGui::IsKeyPressed(ImGuiKey_R)) currentOp_ = ImGuizmo::ROTATE;
-    if (ImGui::IsKeyPressed(ImGuiKey_S)) currentOp_ = ImGuizmo::SCALE;
+    if (ImGui::IsKeyPressed(ImGuiKey_T))
+        currentOp_ = ImGuizmo::TRANSLATE;
+    if (ImGui::IsKeyPressed(ImGuiKey_R))
+        currentOp_ = ImGuizmo::ROTATE;
+    if (ImGui::IsKeyPressed(ImGuiKey_S))
+        currentOp_ = ImGuizmo::SCALE;
     updateOperation();
 
-    if (ImGuizmo::Manipulate(v, p, currentOp_, currentMode_, m, nullptr, nullptr)) {
+    if (ImGuizmo::Manipulate(v, p, currentOp_, currentMode_, m, nullptr, nullptr))
+        {
         glm::mat4 transformMatrix = glm::make_mat4(m);
         if (operation_)
             operation_->Apply(transformMatrix, transform);
-    }
+        }
 }
 
-ImGuizmo::OPERATION GizmoController::GetCurrentMode() const {
+ImGuizmo::OPERATION GizmoController::GetCurrentMode() const
+{
     return currentOp_;
 }
 
-void GizmoController::SetCurrentMode(ImGuizmo::OPERATION operation) {
+void GizmoController::SetCurrentMode(ImGuizmo::OPERATION operation)
+{
     currentOp_ = operation;
     updateOperation();
 }

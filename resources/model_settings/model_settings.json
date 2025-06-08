@@ -17,8 +17,8 @@
             "value": 5
         },
         "center_object": {
-            "default_value": true,
-            "value": true
+            "default_value": false,
+            "value": false
         },
         "flooring_layer_count": {
             "default_value": 3,
@@ -29,8 +29,8 @@
             "value": 0.4
         },
         "infill_pattern": {
-            "default_value": "zigzag",
-            "value": "zigzag"
+            "default_value": "gyroid",
+            "value": "gyroid"
         },
         "infill_sparse_density": {
             "default_value": 10,
@@ -65,12 +65,12 @@
             "value": 220
         },
         "mesh_position_x": {
-            "default_value": 94.00287628173828,
-            "value": 94.00287628173828
+            "default_value": 0.145538330078125,
+            "value": 0.145538330078125
         },
         "mesh_position_y": {
-            "default_value": 91.87052917480469,
-            "value": 91.87052917480469
+            "default_value": 0.5895614624023438,
+            "value": 0.5895614624023438
         },
         "mesh_position_z": {
             "default_value": 0.0,

@@ -3,9 +3,13 @@
 #include "GCodeParser.h"
 #include <glad/glad.h>
 
-class GCodeUploader {
+class GCodeUploader
+{
 public:
-    void Upload(const std::vector<std::vector<GCodeColoredVertex>> &layers,
-                std::vector<unsigned int> &vaos,
-                std::vector<unsigned int> &vbos) const;
+    void Upload
+    (
+        const std::vector<std::vector<GCodeColoredVertex> > &layers,
+        std::vector<unsigned int> &vaos,
+        std::vector<unsigned int> &vbos
+    ) const;
 };

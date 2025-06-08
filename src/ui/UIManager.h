@@ -21,38 +21,62 @@
 
 using json = nlohmann::json;
 
-class UIManager {
+class UIManager
+{
 public:
-    UIManager(ModelManager& mm, SceneRenderer* renderer,
-              GizmoController& gizmo, CameraController& camera,
-              GLFWwindow* window);
+    UIManager
+    (
+        ModelManager &mm, SceneRenderer *renderer,
+        GizmoController &gizmo, CameraController &camera,
+        GLFWwindow *window
+    );
+
     void Frame();
 
 private:
     void showMenuBar();
-    void openFileDialog(const std::function<void(std::string&)>& onFileSelected = nullptr);
-    void openRenderScene();
-    void openModelPropertiesDialog();
-    void loadModelSettings();
-    void saveModelSettings();
-    void loadModel(std::string& modelPath);
-    void loadImageFor3DModel(std::string& imagePath);
-    void sliceActiveModel();
-    void UnloadModel(int idx);
-    void finalizeSlicing();
-    void showGenerationModal();
-    void showSlicingModal();
-    void showErrorModal(std::string &message);
-    void getActiveModel(glm::mat4 &viewMatrix, const ImVec2& viewportScreenPos, const ImVec2& viewportSize);
-    void renderModels(glm::mat4 &viewMatrix);
-    void handleViewportInput(glm::mat4 &viewMatrix,
-                             const ImVec2 &viewportPos,
-                             const ImVec2 &viewportSize);
 
-    ModelManager& modelManager_;
-    SceneRenderer* renderer_;
-    GizmoController& gizmo_;
-    CameraController& camera_;
+    void openFileDialog(const std::function<void(std::string &)> &onFileSelected = nullptr);
+
+    void openRenderScene();
+
+    void openModelPropertiesDialog();
+
+    void loadModelSettings();
+
+    void saveModelSettings();
+
+    void loadModel(std::string &modelPath);
+
+    void loadImageFor3DModel(std::string &imagePath);
+
+    void sliceActiveModel();
+
+    void UnloadModel(int idx);
+
+    void finalizeSlicing();
+
+    void showGenerationModal();
+
+    void showSlicingModal();
+
+    void showErrorModal(std::string &message);
+
+    void getActiveModel(glm::mat4 &viewMatrix, const ImVec2 &viewportScreenPos, const ImVec2 &viewportSize);
+
+    void renderModels(glm::mat4 &viewMatrix);
+
+    void handleViewportInput
+    (
+        glm::mat4 &viewMatrix,
+        const ImVec2 &viewportPos,
+        const ImVec2 &viewportSize
+    );
+
+    ModelManager &modelManager_;
+    SceneRenderer *renderer_;
+    GizmoController &gizmo_;
+    CameraController &camera_;
 
     std::shared_ptr<GCodeModel> gcodeModel_;
     int currentGCodeLayer_ = -1;
@@ -76,7 +100,7 @@ private:
     bool showWinDialog = false;
     bool showErrorModal_ = false;
     std::string errorModalMessage_;
-    GLFWwindow* window_ = nullptr;
+    GLFWwindow *window_ = nullptr;
 
     // Slicing bookkeeping
     std::string pendingGcodePath_;
@@ -87,5 +111,5 @@ private:
 
     json modelSettings_;
     bool modelSettingsLoaded_ = false;
-    std::unordered_map<std::string, std::vector<std::string>> enumOptions_;
+    std::unordered_map<std::string, std::vector<std::string> > enumOptions_;
 };
