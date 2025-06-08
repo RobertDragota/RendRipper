@@ -5,6 +5,8 @@
 #include <assimp/scene.h>
 #include <memory>
 #include <stdexcept>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 #include "MeshRepairer.h"
 
@@ -99,13 +101,18 @@ void ModelManager::UpdateDimensions(int index) {
     meshDimensions_[index] = base * sc;
 }
 
-void ModelManager::ExportTransformedModel(int index, const std::string &outPath) const {
+void ModelManager::ExportTransformedModel(int index, const std::string &outPath,
+                                          bool includeTranslation) const {
     if (index < 0 || index >= static_cast<int>(models_.size())) return;
 
     const Model &model = *models_[index];
     const Transform &tf = *transforms_[index];
 
-    glm::mat4 mat = tf.getMatrix();
+    glm::mat4 mat(1.0f);
+    if (includeTranslation)
+        mat = glm::translate(mat, tf.translation);
+    mat *= glm::toMat4(tf.rotationQuat);
+    mat = glm::scale(mat, tf.scale);
     glm::mat3 normalMat = glm::transpose(glm::inverse(glm::mat3(mat)));
 
     auto scene = std::make_unique<aiScene>();

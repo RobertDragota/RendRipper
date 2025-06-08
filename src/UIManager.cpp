@@ -383,7 +383,8 @@ void UIManager::sliceActiveModel() {
             std::lock_guard lk(slicingMessageMutex_);
             slicingMessage_ = "model_settings.json not found.";
         }
-        modelManager_.ExportTransformedModel(slicingModelIndex_, pendingResizedPath_);
+        // Export mesh without translation so we can position via mesh_position overrides
+        modelManager_.ExportTransformedModel(slicingModelIndex_, pendingResizedPath_, false);
         float offX = renderer_ ? renderer_->GetBedHalfWidth()  : 0.f;
         float offY = renderer_ ? renderer_->GetBedHalfDepth() : 0.f;
 
@@ -504,12 +505,15 @@ void UIManager::openModelPropertiesDialog() {
         ImGui::Text("Model Index: %d", activeModel_);
         glm::vec3 dims = modelManager_.GetDimensions(activeModel_);
         ImGui::Text("Real Dimensions (mm): %.2f x %.2f x %.2f", dims.x, dims.y, dims.z);
+
+        auto& tf = *modelManager_.GetTransform(activeModel_);
         glm::vec3 wc = modelManager_.GetWorldCenter(activeModel_);
         float hx = renderer_ ? renderer_->GetBedHalfWidth() : 0.f;
         float hy = renderer_ ? renderer_->GetBedHalfDepth() : 0.f;
         ImGui::Text("Center on Bed (mm): X=%.2f Y=%.2f", wc.x + hx, wc.y + hy);
+        ImGui::Text("Gizmo Position (mm): X=%.2f Y=%.2f", tf.translation.x + hx,
+                    tf.translation.y + hy);
         ImGui::Separator();
-        auto& tf = *modelManager_.GetTransform(activeModel_);
         bool changed = false;
         if (ImGui::BeginTable("TransformTable", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings)) {
             ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 100.0f);
