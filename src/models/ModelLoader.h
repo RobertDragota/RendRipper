@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <assimp/scene.h>
+#include <memory>
 #include "Mesh.h"
 
 class ModelLoader {
