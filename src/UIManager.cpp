@@ -23,6 +23,8 @@
 #include <regex>
 #include <cstdio>
 #include <cstring>
+#include <fstream>
+#include <vector>
 #include <nlohmann/json.hpp>
 
 #include "glm/gtx/intersect.hpp"
@@ -40,6 +42,7 @@ static bool RayIntersectSphere(const glm::vec3& origin,
     return glm::intersectRaySphere(origin, glm::normalize(dir),
                                    center, radius * radius, t);
 }
+
 
 UIManager::UIManager(ModelManager& mm, SceneRenderer* renderer,
                      GizmoController& gizmo, CameraController& camera,
@@ -503,6 +506,16 @@ void UIManager::openModelPropertiesDialog() {
         ImGui::Text("Model Index: %d", activeModel_);
         glm::vec3 dims = modelManager_.GetDimensions(activeModel_);
         ImGui::Text("Real Dimensions (mm): %.2f x %.2f x %.2f", dims.x, dims.y, dims.z);
+        if (renderer_) {
+            Model* mdl = modelManager_.GetModel(activeModel_);
+            if (mdl) {
+                glm::vec3 localCenter = mdl->computeMassCenter();
+                glm::vec3 worldCenter = glm::vec3(modelManager_.GetTransform(activeModel_)->getMatrix() * glm::vec4(localCenter, 1.0f));
+                float bedX = worldCenter.x + renderer_->GetBedHalfWidth();
+                float bedY = worldCenter.y + renderer_->GetBedHalfDepth();
+                ImGui::Text("Mass Center XY (mm): %.2f, %.2f", bedX, bedY);
+            }
+        }
         ImGui::Separator();
         auto& tf = *modelManager_.GetTransform(activeModel_);
         bool changed = false;
@@ -716,15 +729,7 @@ void UIManager::finalizeSlicing() {
     try {
         auto gm = std::make_shared<GCodeModel>(pendingGcodePath_);
         if (renderer_) {
-            glm::vec3 gcodeCenter = gm->GetCenter() -
-                glm::vec3(renderer_->GetBedHalfWidth(), renderer_->GetBedHalfDepth(), 0.f);
-            glm::vec3 modelCenter(0.f);
-            if (slicingModelIndex_ >= 0) {
-                Transform* tf = modelManager_.GetTransform(slicingModelIndex_);
-                if (tf) modelCenter = tf->translation;
-            }
-            glm::vec3 offset = modelCenter - gcodeCenter;
-            renderer_->SetGCodeOffset(offset);
+            renderer_->SetGCodeOffset(glm::vec3(0.f));
             renderer_->SetGCodeModel(gm);
         }
         gcodeModel_ = gm;
