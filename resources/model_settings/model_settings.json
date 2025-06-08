@@ -80,6 +80,46 @@
         "infill_support_enabled": {
             "value": false,
             "default_value": false
+        },
+        "layer_height": {
+            "value": 0.1,
+            "default_value": 0.1
+        },
+        "material_print_temperature": {
+            "value": 220,
+            "default_value": 220
+        },
+        "material_bed_temperature": {
+            "value": 60,
+            "default_value": 60
+        },
+        "support_type": {
+            "value": "buildplate",
+            "default_value": "buildplate"
+        },
+        "adhesion_type": {
+            "value": "skirt",
+            "default_value": "skirt"
+        },
+        "speed_print": {
+            "value": 30,
+            "default_value": 30
+        },
+        "speed_travel": {
+            "value": 60,
+            "default_value": 60
+        },
+        "retraction_enable": {
+            "value": true,
+            "default_value": true
+        },
+        "retraction_amount": {
+            "value": 6.5,
+            "default_value": 6.5
+        },
+        "retraction_speed": {
+            "value": 25,
+            "default_value": 25
         }
     }
 }
