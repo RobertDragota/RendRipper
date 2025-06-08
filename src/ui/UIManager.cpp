@@ -114,7 +114,11 @@ void UIManager::showMenuBar() {
                     try {
                         gcodeModel_ = std::make_shared<GCodeModel>(selected);
                         if (renderer_) {
-                            renderer_->SetGCodeOffset(glm::vec3(0.f));
+                            glm::vec3 c = gcodeModel_->GetCenter();
+                            glm::vec3 offset(renderer_->GetBedHalfWidth() - c.x,
+                                             renderer_->GetBedHalfDepth() - c.y,
+                                             0.f);
+                            renderer_->SetGCodeOffset(offset);
                             renderer_->SetGCodeModel(gcodeModel_);
                         }
                         currentGCodeLayer_ = -1;
