@@ -1,8 +1,24 @@
 {
     "overrides": {
+        "acceleration_print": {
+            "default_value": 2000,
+            "value": 2000
+        },
+        "adhesion_type": {
+            "default_value": "skirt",
+            "value": "skirt"
+        },
         "alternate_extra_perimeter": {
             "default_value": false,
             "value": false
+        },
+        "bottom_layers": {
+            "default_value": 5,
+            "value": 5
+        },
+        "center_object": {
+            "default_value": true,
+            "value": true
         },
         "flooring_layer_count": {
             "default_value": 3,
@@ -28,21 +44,65 @@
             "default_value": false,
             "value": false
         },
+        "initial_layer_height": {
+            "default_value": 0.2,
+            "value": 0.2
+        },
+        "jerk_print": {
+            "default_value": 50,
+            "value": 50
+        },
+        "layer_height": {
+            "default_value": 0.1,
+            "value": 0.1
+        },
+        "material_bed_temperature": {
+            "default_value": 60,
+            "value": 60
+        },
+        "material_print_temperature": {
+            "default_value": 220,
+            "value": 220
+        },
         "mesh_position_x": {
-            "default_value": 84.64673614501953,
-            "value": 84.64673614501953
+            "default_value": 94.00287628173828,
+            "value": 94.00287628173828
         },
         "mesh_position_y": {
-            "default_value": 19.032543182373047,
-            "value": 19.032543182373047
+            "default_value": 91.87052917480469,
+            "value": 91.87052917480469
+        },
+        "mesh_position_z": {
+            "default_value": 0.0,
+            "value": 0.0
         },
         "min_wall_line_width": {
             "default_value": 0.4,
             "value": 0.4
         },
+        "retraction_amount": {
+            "default_value": 6.5,
+            "value": 6.5
+        },
+        "retraction_enable": {
+            "default_value": true,
+            "value": true
+        },
+        "retraction_speed": {
+            "default_value": 25,
+            "value": 25
+        },
         "roofing_layer_count": {
             "default_value": 1,
             "value": 1
+        },
+        "speed_print": {
+            "default_value": 30,
+            "value": 30
+        },
+        "speed_travel": {
+            "default_value": 60,
+            "value": 60
         },
         "support_density": {
             "default_value": 20.0,
@@ -76,9 +136,21 @@
             "default_value": "tree",
             "value": "tree"
         },
+        "support_type": {
+            "default_value": "buildplate",
+            "value": "buildplate"
+        },
         "support_z_seam_away_from_model": {
             "default_value": false,
             "value": false
+        },
+        "top_layers": {
+            "default_value": 5,
+            "value": 5
+        },
+        "wall_thickness": {
+            "default_value": 1.2,
+            "value": 1.2
         }
     }
 }
