@@ -1,125 +1,84 @@
 {
     "overrides": {
-        "roofing_layer_count": {
-            "value": 1,
-            "default_value": 1
-        },
         "alternate_extra_perimeter": {
-            "value": false,
-            "default_value": false
+            "default_value": false,
+            "value": false
         },
         "flooring_layer_count": {
-            "value": 1,
-            "default_value": 1
-        },
-
-        "support_enable": {
-            "value": true,
-            "default_value": true
-        },
-        "support_structure": {
-            "value": "tree",
-            "default_value": "tree"
-        },
-        "support_overhang_angle": {
-            "value": 45.0,
-            "default_value": 45.0
-        },
-        "support_density": {
-            "value": 10.0,
-            "default_value": 20.0
-        },
-        "support_horizontal_expansion": {
-            "value": 0.5,
-            "default_value": 0.7
-        },
-        "support_minimum_branch_diameter": {
-            "value": 0.9,
-            "default_value": 1.2
-        },
-        "support_interface_layers": {
-            "value": 2,
-            "default_value": 2
-        },
-        "support_interface_density": {
-            "value": 100,
-            "default_value": 100
-        },
-        "support_z_seam_away_from_model": {
-            "value": false,
-            "default_value": false
-        },
-        "min_wall_line_width": {
-            "value": 0.4,
-            "default_value": 0.4
-        },
-        "mesh_position_x": {
-            "value": 0.0,
-            "default_value": 0
-        },
-        "mesh_position_y": {
-            "value": 0.0,
-            "default_value": 0
-        },
-        "infill_sparse_density": {
-            "value": 20,
-            "default_value": 20
-        },
-        "infill_pattern": {
-            "value": "grid",
-            "default_value": "grid"
+            "default_value": 3,
+            "value": 3
         },
         "infill_line_width": {
-            "value": 0.4,
-            "default_value": 0.4
+            "default_value": 0.4,
+            "value": 0.4
+        },
+        "infill_pattern": {
+            "default_value": "zigzag",
+            "value": "zigzag"
+        },
+        "infill_sparse_density": {
+            "default_value": 10,
+            "value": 10
         },
         "infill_sparse_thickness": {
-            "value": 0.1,
-            "default_value": 0.1
+            "default_value": 0.1,
+            "value": 0.1
         },
         "infill_support_enabled": {
-            "value": false,
-            "default_value": false
+            "default_value": false,
+            "value": false
         },
-        "layer_height": {
-            "value": 0.1,
-            "default_value": 0.1
+        "mesh_position_x": {
+            "default_value": 84.64673614501953,
+            "value": 84.64673614501953
         },
-        "material_print_temperature": {
-            "value": 220,
-            "default_value": 220
+        "mesh_position_y": {
+            "default_value": 19.032543182373047,
+            "value": 19.032543182373047
         },
-        "material_bed_temperature": {
-            "value": 60,
-            "default_value": 60
+        "min_wall_line_width": {
+            "default_value": 0.4,
+            "value": 0.4
         },
-        "support_type": {
-            "value": "buildplate",
-            "default_value": "buildplate"
+        "roofing_layer_count": {
+            "default_value": 1,
+            "value": 1
         },
-        "adhesion_type": {
-            "value": "skirt",
-            "default_value": "skirt"
+        "support_density": {
+            "default_value": 20.0,
+            "value": 10.0
         },
-        "speed_print": {
-            "value": 30,
-            "default_value": 30
+        "support_enable": {
+            "default_value": true,
+            "value": true
         },
-        "speed_travel": {
-            "value": 60,
-            "default_value": 60
+        "support_horizontal_expansion": {
+            "default_value": 0.7,
+            "value": 0.5
         },
-        "retraction_enable": {
-            "value": true,
-            "default_value": true
+        "support_interface_density": {
+            "default_value": 100,
+            "value": 100
         },
-        "retraction_amount": {
-            "value": 6.5,
-            "default_value": 6.5
+        "support_interface_layers": {
+            "default_value": 2,
+            "value": 2
         },
-        "retraction_speed": {
-            "value": 25,
-            "default_value": 25
+        "support_minimum_branch_diameter": {
+            "default_value": 1.2,
+            "value": 0.9
+        },
+        "support_overhang_angle": {
+            "default_value": 45.0,
+            "value": 45.0
+        },
+        "support_structure": {
+            "default_value": "tree",
+            "value": "tree"
+        },
+        "support_z_seam_away_from_model": {
+            "default_value": false,
+            "value": false
         }
     }
 }
