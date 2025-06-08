@@ -395,8 +395,12 @@ void UIManager::sliceActiveModel() {
 
             if (modelSettingsLoaded_) {
                 if (auto tf = modelManager_.GetTransform(slicingModelIndex_)) {
-                    modelSettings_["overrides"]["mesh_position_x"]["value"] = offX + tf->translation.x;
-                    modelSettings_["overrides"]["mesh_position_y"]["value"] = offY + tf->translation.y;
+                    double posX = offX + tf->translation.x;
+                    double posY = offY + tf->translation.y;
+                    modelSettings_["overrides"]["mesh_position_x"]["value"] = posX;
+                    modelSettings_["overrides"]["mesh_position_x"]["default_value"] = posX;
+                    modelSettings_["overrides"]["mesh_position_y"]["value"] = posY;
+                    modelSettings_["overrides"]["mesh_position_y"]["default_value"] = posY;
                 }
                 saveModelSettings();
             }
@@ -590,13 +594,25 @@ void UIManager::openModelPropertiesDialog() {
                     ImGui::SetNextItemWidth(-FLT_MIN);
                     if (val.is_boolean()) {
                         bool b = val.get<bool>();
-                        if (ImGui::Checkbox("##v", &b)) { val = b; msChanged = true; }
+                        if (ImGui::Checkbox("##v", &b)) {
+                            val = b;
+                            entry["default_value"] = val;
+                            msChanged = true;
+                        }
                     } else if (val.is_number_integer()) {
                         int v = val.get<int>();
-                        if (ImGui::InputInt("##v", &v)) { val = v; msChanged = true; }
+                        if (ImGui::InputInt("##v", &v)) {
+                            val = v;
+                            entry["default_value"] = val;
+                            msChanged = true;
+                        }
                     } else if (val.is_number_float()) {
                         double v = val.get<double>();
-                        if (ImGui::InputDouble("##v", &v)) { val = v; msChanged = true; }
+                        if (ImGui::InputDouble("##v", &v)) {
+                            val = v;
+                            entry["default_value"] = val;
+                            msChanged = true;
+                        }
                     } else if (val.is_string()) {
                         std::string s = val.get<std::string>();
                         auto optIt = enumOptions_.find(key);
@@ -608,7 +624,9 @@ void UIManager::openModelPropertiesDialog() {
                                 for (size_t i=0;i<optIt->second.size();++i) {
                                     bool selected = (current==static_cast<int>(i));
                                     if (ImGui::Selectable(optIt->second[i].c_str(), selected)) {
-                                        current = static_cast<int>(i); msChanged = true; s = optIt->second[i];
+                                        current = static_cast<int>(i);
+                                        msChanged = true;
+                                        s = optIt->second[i];
                                     }
                                     if (selected) ImGui::SetItemDefaultFocus();
                                 }
@@ -617,9 +635,13 @@ void UIManager::openModelPropertiesDialog() {
                         } else {
                             char buf[128];
                             strncpy(buf, s.c_str(), sizeof(buf)); buf[sizeof(buf)-1] = '\0';
-                            if (ImGui::InputText("##v", buf, sizeof(buf))) { s = buf; msChanged = true; }
+                            if (ImGui::InputText("##v", buf, sizeof(buf))) {
+                                s = buf;
+                                msChanged = true;
+                            }
                         }
                         val = s;
+                        entry["default_value"] = val;
                     }
                     ImGui::PopID();
                 }
