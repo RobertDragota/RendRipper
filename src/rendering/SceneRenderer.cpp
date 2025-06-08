@@ -21,6 +21,14 @@ SceneRenderer::SceneRenderer(const std::string &printerDefJsonPath)
                 volumeHalfX_ = w * 0.5f;
                 volumeHalfY_ = d * 0.5f;
                 volumeHeight_ = h;
+                if (j.contains("metadata") && j["metadata"].contains("platform_offset")) {
+                    auto arr = j["metadata"]["platform_offset"];
+                    if (arr.is_array() && arr.size() >= 3) {
+                        platformOffset_.x = arr[0].get<float>();
+                        platformOffset_.y = arr[1].get<float>();
+                        platformOffset_.z = arr[2].get<float>();
+                    }
+                }
             } catch (const std::exception &e) {
                 std::cerr << "Warning: JSON parse error in SceneRenderer constructor: "
                           << e.what() << "\nFalling back to defaults.\n";
