@@ -89,7 +89,8 @@ void GCodeModel::DrawUpToLayer(int maxLayerIndex, Shader& lineShader) const {
     if (!ready_) return;
 
     int layerCount = static_cast<int>(layerVertexCounts_.size());
-    int end = (maxLayerIndex < 0 || maxLayerIndex >= layerCount) ? (layerCount - 1) : maxLayerIndex;
+    int end = maxLayerIndex < 0 ? layerCount - 1
+                                : std::clamp(maxLayerIndex, 0, layerCount - 1);
 
     lineShader.use();
     if (lineShader.hasUniform("lineColor")) {
