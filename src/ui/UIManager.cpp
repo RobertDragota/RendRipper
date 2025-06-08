@@ -825,6 +825,7 @@ void UIManager::handleViewportInput(glm::mat4 &viewMatrix,
     }
 
     if (ImGui::IsMouseDown(ImGuiMouseButton_Middle) && !ImGuizmo::IsUsing()) {
+
         ImVec2 delta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Middle, 0.0f);
         constexpr float panSpeed = 0.1f;
         float rP = glm::radians(camera_.pitch);
@@ -838,6 +839,7 @@ void UIManager::handleViewportInput(glm::mat4 &viewMatrix,
         camera_.pivot -= right * delta.x * panSpeed;
         camera_.pivot += up * delta.y * panSpeed;
         ImGui::ResetMouseDragDelta(ImGuiMouseButton_Middle);
+
     }
 
     ImGuiIO &io = ImGui::GetIO();
