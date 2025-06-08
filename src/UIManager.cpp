@@ -383,7 +383,8 @@ void UIManager::sliceActiveModel() {
             std::lock_guard lk(slicingMessageMutex_);
             slicingMessage_ = "model_settings.json not found.";
         }
-        modelManager_.ExportTransformedModel(slicingModelIndex_, pendingResizedPath_);
+        // Export mesh without translation so we can position via mesh_position overrides
+        modelManager_.ExportTransformedModel(slicingModelIndex_, pendingResizedPath_, false);
         float offX = renderer_ ? renderer_->GetBedHalfWidth()  : 0.f;
         float offY = renderer_ ? renderer_->GetBedHalfDepth() : 0.f;
 
@@ -503,8 +504,14 @@ void UIManager::openModelPropertiesDialog() {
         ImGui::Text("Model Index: %d", activeModel_);
         glm::vec3 dims = modelManager_.GetDimensions(activeModel_);
         ImGui::Text("Real Dimensions (mm): %.2f x %.2f x %.2f", dims.x, dims.y, dims.z);
-        ImGui::Separator();
         auto& tf = *modelManager_.GetTransform(activeModel_);
+        glm::vec3 wc = modelManager_.GetWorldCenter(activeModel_);
+        float hx = renderer_ ? renderer_->GetBedHalfWidth() : 0.f;
+        float hy = renderer_ ? renderer_->GetBedHalfDepth() : 0.f;
+        ImGui::Text("Center on Bed (mm): X=%.2f Y=%.2f", wc.x + hx, wc.y + hy);
+        ImGui::Text("Gizmo Position (mm): X=%.2f Y=%.2f", tf.translation.x + hx,
+                    tf.translation.y + hy);
+        ImGui::Separator();
         bool changed = false;
         if (ImGui::BeginTable("TransformTable", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings)) {
             ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 100.0f);
@@ -702,14 +709,24 @@ void UIManager::renderModels(glm::mat4&) {
 void UIManager::finalizeSlicing() {
     try {
         auto gm = std::make_shared<GCodeModel>(pendingGcodePath_);
+        float bedX = renderer_ ? renderer_->GetBedHalfWidth() : 0.f;
+        float bedY = renderer_ ? renderer_->GetBedHalfDepth() : 0.f;
+
+        // Check bounds of generated G-code before loading
+        glm::vec3 gMin = gm->GetBoundsMin();
+        glm::vec3 gMax = gm->GetBoundsMax();
+        if (gMin.x < 0.f || gMin.y < 0.f || gMax.x > bedX * 2.f || gMax.y > bedY * 2.f) {
+            errorModalMessage_ = "Sliced model exceeds printer volume.";
+            showErrorModal_ = true;
+            std::filesystem::remove(pendingGcodePath_);
+            return;
+        }
+
         if (renderer_) {
-            glm::vec3 gcodeCenter = gm->GetCenter() -
-                glm::vec3(renderer_->GetBedHalfWidth(), renderer_->GetBedHalfDepth(), 0.f);
+            glm::vec3 gcodeCenter = gm->GetCenter() - glm::vec3(bedX, bedY, 0.f);
             glm::vec3 modelCenter(0.f);
-            if (slicingModelIndex_ >= 0) {
-                Transform* tf = modelManager_.GetTransform(slicingModelIndex_);
-                if (tf) modelCenter = tf->translation;
-            }
+            if (slicingModelIndex_ >= 0)
+                modelCenter = modelManager_.GetWorldCenter(slicingModelIndex_);
             glm::vec3 offset = modelCenter - gcodeCenter;
             renderer_->SetGCodeOffset(offset);
             renderer_->SetGCodeModel(gm);
