@@ -397,13 +397,20 @@ void UIManager::sliceActiveModel() {
         try {
 
             if (modelSettingsLoaded_) {
-                if (auto tf = modelManager_.GetTransform(slicingModelIndex_)) {
-                    double posX = offX + tf->translation.x;
-                    double posY = offY + tf->translation.y;
+                Model* mdl = modelManager_.GetModel(slicingModelIndex_);
+                Transform* tf = modelManager_.GetTransform(slicingModelIndex_);
+                if (mdl && tf) {
+                    glm::vec3 localCenter = mdl->computeMassCenter();
+                    glm::vec3 worldCenter = glm::vec3(tf->getMatrix() * glm::vec4(localCenter, 1.0f));
+                    double posX = offX + worldCenter.x;
+                    double posY = offY + worldCenter.y;
                     modelSettings_["overrides"]["mesh_position_x"]["value"] = posX;
                     modelSettings_["overrides"]["mesh_position_x"]["default_value"] = posX;
                     modelSettings_["overrides"]["mesh_position_y"]["value"] = posY;
                     modelSettings_["overrides"]["mesh_position_y"]["default_value"] = posY;
+
+                    modelSettings_["overrides"]["support_enable"]["value"] = true;
+                    modelSettings_["overrides"]["support_enable"]["default_value"] = true;
                 }
                 saveModelSettings();
             }
@@ -513,7 +520,7 @@ void UIManager::openModelPropertiesDialog() {
                 glm::vec3 worldCenter = glm::vec3(modelManager_.GetTransform(activeModel_)->getMatrix() * glm::vec4(localCenter, 1.0f));
                 float bedX = worldCenter.x + renderer_->GetBedHalfWidth();
                 float bedY = worldCenter.y + renderer_->GetBedHalfDepth();
-                ImGui::Text("Mass Center XY (mm): %.2f, %.2f", bedX, bedY);
+                ImGui::Text("Slice Reference XY (mm): %.2f, %.2f", bedX, bedY);
             }
         }
         ImGui::Separator();
