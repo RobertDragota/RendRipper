@@ -142,7 +142,8 @@ void SceneRenderer::RenderGCodeLayer(int layerIndex)
     if (!gcodeModel_ || !gcodeShader_) return;
     gcodeShader_->use();
     glm::mat4 modelMat(1.0f);
-    modelMat = glm::translate(modelMat, glm::vec3(-volumeHalfX_, -volumeHalfY_, 0.0f) + gcodeOffset_);
+    // G-code coordinates are now centered, so no half-bed offset is needed
+    modelMat = glm::translate(modelMat, gcodeOffset_);
     gcodeShader_->setMat4("model", modelMat);
     gcodeShader_->setMat4("view", viewMatrix_);
     gcodeShader_->setMat4("projection", projectionMatrix_);
@@ -154,7 +155,8 @@ void SceneRenderer::RenderGCodeUpToLayer(int maxLayerIndex)
     if (!gcodeModel_ || !gcodeShader_) return;
     gcodeShader_->use();
     glm::mat4 modelMat(1.0f);
-    modelMat = glm::translate(modelMat, glm::vec3(-volumeHalfX_, -volumeHalfY_, 0.0f) + gcodeOffset_);
+    // G-code coordinates are now centered, so no half-bed offset is needed
+    modelMat = glm::translate(modelMat, gcodeOffset_);
     gcodeShader_->setMat4("model", modelMat);
     gcodeShader_->setMat4("view", viewMatrix_);
     gcodeShader_->setMat4("projection", projectionMatrix_);

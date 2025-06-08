@@ -373,8 +373,8 @@ void UIManager::sliceActiveModel() {
             slicingMessage_ = "model_settings.json not found.";
         }
         modelManager_.ExportTransformedModel(slicingModelIndex_, pendingResizedPath_);
-        float offX = renderer_ ? renderer_->GetBedHalfWidth()  : 0.f;
-        float offY = renderer_ ? renderer_->GetBedHalfDepth() : 0.f;
+        float offX = 0.f; // origin is now at the center
+        float offY = 0.f;
 
         // Reload settings from disk before applying overrides
         loadModelSettings();
@@ -388,8 +388,8 @@ void UIManager::sliceActiveModel() {
                 if (mdl && tf) {
                     glm::vec3 localCenter = mdl->computeMassCenter();
                     glm::vec3 worldCenter = glm::vec3(tf->getMatrix() * glm::vec4(localCenter, 1.0f));
-                    double posX = offX + worldCenter.x;
-                    double posY = offY + worldCenter.y;
+                    double posX = worldCenter.x;
+                    double posY = worldCenter.y;
                     modelSettings_["overrides"]["mesh_position_x"]["value"] = posX;
                     modelSettings_["overrides"]["mesh_position_x"]["default_value"] = posX;
                     modelSettings_["overrides"]["mesh_position_y"]["value"] = posY;
