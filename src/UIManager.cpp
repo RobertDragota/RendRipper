@@ -23,6 +23,8 @@
 #include <regex>
 #include <cstdio>
 #include <cstring>
+#include <fstream>
+#include <vector>
 #include <nlohmann/json.hpp>
 
 #include "glm/gtx/intersect.hpp"
@@ -40,6 +42,7 @@ static bool RayIntersectSphere(const glm::vec3& origin,
     return glm::intersectRaySphere(origin, glm::normalize(dir),
                                    center, radius * radius, t);
 }
+
 
 UIManager::UIManager(ModelManager& mm, SceneRenderer* renderer,
                      GizmoController& gizmo, CameraController& camera,
@@ -364,14 +367,6 @@ void UIManager::sliceActiveModel() {
     if (activeModel_ < 0 || activeModel_ >= static_cast<int>(modelManager_.Count()))
         return;
 
-    float hx = renderer_ ? renderer_->GetBedHalfWidth() : 0.f;
-    float hy = renderer_ ? renderer_->GetBedHalfDepth() : 0.f;
-    if (!modelManager_.FitsInBed(activeModel_, hx, hy)) {
-        errorModalMessage_ = "Model exceeds printer volume.";
-        showErrorModal_ = true;
-        return;
-    }
-
     slicingModelIndex_ = activeModel_;
     pendingStlPath_ = modelManager_.GetPath(activeModel_);
     std::filesystem::path base(pendingStlPath_);
@@ -391,8 +386,7 @@ void UIManager::sliceActiveModel() {
             std::lock_guard lk(slicingMessageMutex_);
             slicingMessage_ = "model_settings.json not found.";
         }
-        // Export mesh without translation so we can position via mesh_position overrides
-        modelManager_.ExportTransformedModel(slicingModelIndex_, pendingResizedPath_, false);
+        modelManager_.ExportTransformedModel(slicingModelIndex_, pendingResizedPath_);
         float offX = renderer_ ? renderer_->GetBedHalfWidth()  : 0.f;
         float offY = renderer_ ? renderer_->GetBedHalfDepth() : 0.f;
 
@@ -403,14 +397,20 @@ void UIManager::sliceActiveModel() {
         try {
 
             if (modelSettingsLoaded_) {
-                if (auto mdl = modelManager_.GetModel(slicingModelIndex_)) {
-                    glm::vec3 wc = modelManager_.GetWorldCenter(slicingModelIndex_);
-                    double mx = offX + wc.x;
-                    double my = offY + wc.y;
-                    modelSettings_["overrides"]["mesh_position_x"]["value"] = mx;
-                    modelSettings_["overrides"]["mesh_position_x"]["default_value"] = mx;
-                    modelSettings_["overrides"]["mesh_position_y"]["value"] = my;
-                    modelSettings_["overrides"]["mesh_position_y"]["default_value"] = my;
+                Model* mdl = modelManager_.GetModel(slicingModelIndex_);
+                Transform* tf = modelManager_.GetTransform(slicingModelIndex_);
+                if (mdl && tf) {
+                    glm::vec3 localCenter = mdl->computeMassCenter();
+                    glm::vec3 worldCenter = glm::vec3(tf->getMatrix() * glm::vec4(localCenter, 1.0f));
+                    double posX = offX + worldCenter.x;
+                    double posY = offY + worldCenter.y;
+                    modelSettings_["overrides"]["mesh_position_x"]["value"] = posX;
+                    modelSettings_["overrides"]["mesh_position_x"]["default_value"] = posX;
+                    modelSettings_["overrides"]["mesh_position_y"]["value"] = posY;
+                    modelSettings_["overrides"]["mesh_position_y"]["default_value"] = posY;
+
+                    modelSettings_["overrides"]["support_enable"]["value"] = true;
+                    modelSettings_["overrides"]["support_enable"]["default_value"] = true;
                 }
                 saveModelSettings();
             }
@@ -513,16 +513,18 @@ void UIManager::openModelPropertiesDialog() {
         ImGui::Text("Model Index: %d", activeModel_);
         glm::vec3 dims = modelManager_.GetDimensions(activeModel_);
         ImGui::Text("Real Dimensions (mm): %.2f x %.2f x %.2f", dims.x, dims.y, dims.z);
-
-
-        auto& tf = *modelManager_.GetTransform(activeModel_);
-        glm::vec3 wc = modelManager_.GetWorldCenter(activeModel_);
-        float hx = renderer_ ? renderer_->GetBedHalfWidth() : 0.f;
-        float hy = renderer_ ? renderer_->GetBedHalfDepth() : 0.f;
-        ImGui::Text("Center on Bed (mm): X=%.2f Y=%.2f", wc.x + hx, wc.y + hy);
-        ImGui::Text("Gizmo Position (mm): X=%.2f Y=%.2f", tf.translation.x + hx,
-                    tf.translation.y + hy);
+        if (renderer_) {
+            Model* mdl = modelManager_.GetModel(activeModel_);
+            if (mdl) {
+                glm::vec3 localCenter = mdl->computeMassCenter();
+                glm::vec3 worldCenter = glm::vec3(modelManager_.GetTransform(activeModel_)->getMatrix() * glm::vec4(localCenter, 1.0f));
+                float bedX = worldCenter.x + renderer_->GetBedHalfWidth();
+                float bedY = worldCenter.y + renderer_->GetBedHalfDepth();
+                ImGui::Text("Slice Reference XY (mm): %.2f, %.2f", bedX, bedY);
+            }
+        }
         ImGui::Separator();
+        auto& tf = *modelManager_.GetTransform(activeModel_);
         bool changed = false;
         if (ImGui::BeginTable("TransformTable", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings)) {
             ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 100.0f);
@@ -532,12 +534,8 @@ void UIManager::openModelPropertiesDialog() {
             ImGui::TableHeadersRow();
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0); ImGui::TextUnformatted("Translation");
-            float transX = tf.translation.x + hx;
-            float transY = tf.translation.y + hy;
-            ImGui::TableSetColumnIndex(1); ImGui::SetNextItemWidth(-FLT_MIN);
-            if (ImGui::DragFloat("##TransX", &transX, 0.01f)) { tf.translation.x = transX - hx; changed = true; }
-            ImGui::TableSetColumnIndex(2); ImGui::SetNextItemWidth(-FLT_MIN);
-            if (ImGui::DragFloat("##TransY", &transY, 0.01f)) { tf.translation.y = transY - hy; changed = true; }
+            ImGui::TableSetColumnIndex(1); ImGui::SetNextItemWidth(-FLT_MIN); if (ImGui::DragFloat("##TransX", &tf.translation.x, 0.01f)) changed = true;
+            ImGui::TableSetColumnIndex(2); ImGui::SetNextItemWidth(-FLT_MIN); if (ImGui::DragFloat("##TransY", &tf.translation.y, 0.01f)) changed = true;
             ImGui::TableSetColumnIndex(3); ImGui::SetNextItemWidth(-FLT_MIN); if (ImGui::DragFloat("##TransZ", &tf.translation.z, 0.01f)) changed = true;
             glm::vec3 euler = tf.getEulerAngles();
             ImGui::TableNextRow(); ImGui::TableSetColumnIndex(0); ImGui::TextUnformatted("Rotation");
@@ -614,17 +612,27 @@ void UIManager::openModelPropertiesDialog() {
                     ImGui::TextUnformatted(key.c_str());
                     ImGui::TableSetColumnIndex(1);
                     ImGui::SetNextItemWidth(-FLT_MIN);
-
-                    auto& def = entry["default_value"];
                     if (val.is_boolean()) {
                         bool b = val.get<bool>();
-                        if (ImGui::Checkbox("##v", &b)) { val = b; def = b; msChanged = true; }
+                        if (ImGui::Checkbox("##v", &b)) {
+                            val = b;
+                            entry["default_value"] = val;
+                            msChanged = true;
+                        }
                     } else if (val.is_number_integer()) {
                         int v = val.get<int>();
-                        if (ImGui::InputInt("##v", &v)) { val = v; def = v; msChanged = true; }
+                        if (ImGui::InputInt("##v", &v)) {
+                            val = v;
+                            entry["default_value"] = val;
+                            msChanged = true;
+                        }
                     } else if (val.is_number_float()) {
                         double v = val.get<double>();
-                        if (ImGui::InputDouble("##v", &v)) { val = v; def = v; msChanged = true; }
+                        if (ImGui::InputDouble("##v", &v)) {
+                            val = v;
+                            entry["default_value"] = val;
+                            msChanged = true;
+                        }
                     } else if (val.is_string()) {
                         std::string s = val.get<std::string>();
                         auto optIt = enumOptions_.find(key);
@@ -636,7 +644,9 @@ void UIManager::openModelPropertiesDialog() {
                                 for (size_t i=0;i<optIt->second.size();++i) {
                                     bool selected = (current==static_cast<int>(i));
                                     if (ImGui::Selectable(optIt->second[i].c_str(), selected)) {
-                                        current = static_cast<int>(i); msChanged = true; s = optIt->second[i];
+                                        current = static_cast<int>(i);
+                                        msChanged = true;
+                                        s = optIt->second[i];
                                     }
                                     if (selected) ImGui::SetItemDefaultFocus();
                                 }
@@ -645,12 +655,13 @@ void UIManager::openModelPropertiesDialog() {
                         } else {
                             char buf[128];
                             strncpy(buf, s.c_str(), sizeof(buf)); buf[sizeof(buf)-1] = '\0';
-                            if (ImGui::InputText("##v", buf, sizeof(buf))) { s = buf; msChanged = true; }
+                            if (ImGui::InputText("##v", buf, sizeof(buf))) {
+                                s = buf;
+                                msChanged = true;
+                            }
                         }
                         val = s;
-
-                        def = s;
-
+                        entry["default_value"] = val;
                     }
                     ImGui::PopID();
                 }
@@ -724,23 +735,8 @@ void UIManager::renderModels(glm::mat4&) {
 void UIManager::finalizeSlicing() {
     try {
         auto gm = std::make_shared<GCodeModel>(pendingGcodePath_);
-        float bedX = renderer_ ? renderer_->GetBedHalfWidth() : 0.f;
-        float bedY = renderer_ ? renderer_->GetBedHalfDepth() : 0.f;
-
-        // Check bounds of generated G-code before loading
-        glm::vec3 gMin = gm->GetBoundsMin();
-        glm::vec3 gMax = gm->GetBoundsMax();
-        if (gMin.x < 0.f || gMin.y < 0.f || gMax.x > bedX * 2.f || gMax.y > bedY * 2.f) {
-            errorModalMessage_ = "Sliced model exceeds printer volume.";
-            showErrorModal_ = true;
-            std::filesystem::remove(pendingGcodePath_);
-            return;
-        }
-
         if (renderer_) {
-
-            renderer_->SetGCodeOffset(glm::vec3(0.0f));
-
+            renderer_->SetGCodeOffset(glm::vec3(0.f));
             renderer_->SetGCodeModel(gm);
         }
         gcodeModel_ = gm;
