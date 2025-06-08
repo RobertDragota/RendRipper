@@ -278,7 +278,23 @@ void UIManager::sliceActiveModel()
             std::lock_guard lk(slicingMessageMutex_);
             slicingMessage_ = "model_settings.json not found.";
             }
+        // Export without applying translation so that CuraEngine can position the
+        // mesh using the mesh_position_x/y overrides only once.
+        glm::vec3 origTranslation(0.f);
+        Transform *exportTf = modelManager_.GetTransform(slicingModelIndex_);
+        if (exportTf)
+            {
+            origTranslation = exportTf->getTranslation();
+            exportTf->setTranslation(glm::vec3(0.f));
+            }
+
         modelManager_.ExportTransformedModel(slicingModelIndex_, pendingResizedPath_);
+
+        if (exportTf)
+            {
+            exportTf->setTranslation(origTranslation);
+            }
+
         float offX = renderer_ ? renderer_->GetBedHalfWidth() : 0.f;
         float offY = renderer_ ? renderer_->GetBedHalfDepth() : 0.f;
 
