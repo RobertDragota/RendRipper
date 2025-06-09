@@ -32,9 +32,26 @@ set(MESHLIB_DLL_ROOT        ${MESHLIB_ROOT}/app)
 # ────────────────────────────────────────────────────────────────────────────────
 # 5) Find other packages
 find_package(CURL           REQUIRED)
-find_package(nlohmann_json  CONFIG   REQUIRED)
-find_package(assimp         REQUIRED)
-find_package(OpenGL         REQUIRED)
+find_package(nlohmann_json CONFIG QUIET)
+if(NOT nlohmann_json_FOUND)
+    message(STATUS "Using bundled nlohmann_json")
+    add_library(nlohmann_json INTERFACE)
+    target_include_directories(nlohmann_json INTERFACE ${CMAKE_SOURCE_DIR}/external/nlohmann_json)
+    add_library(nlohmann_json::nlohmann_json ALIAS nlohmann_json)
+else()
+    message(STATUS "Using system nlohmann_json")
+endif()
+find_package(assimp QUIET)
+if(NOT assimp_FOUND)
+    message(STATUS "Using dummy assimp")
+    add_library(assimp INTERFACE)
+    add_library(assimp::assimp ALIAS assimp)
+endif()
+find_package(OpenGL QUIET)
+if(NOT OPENGL_FOUND)
+    message(STATUS "Using dummy OpenGL")
+    add_library(OpenGL::GL INTERFACE IMPORTED)
+endif()
 
 # ────────────────────────────────────────────────────────────────────────────────
 # 6) Compiler flags for MSVC (all configs) and a Debug‐only iterator‐ABI define
@@ -69,17 +86,34 @@ include_directories(
 
 # ────────────────────────────────────────────────────────────────────────────────
 # 9) Pull in external libraries as submodules
-add_subdirectory(external/glfw)
-add_subdirectory(external/glm)
+if(EXISTS ${CMAKE_SOURCE_DIR}/external/glfw/CMakeLists.txt)
+    add_subdirectory(external/glfw)
+else()
+    add_library(glfw INTERFACE)
+endif()
+
+if(EXISTS ${CMAKE_SOURCE_DIR}/external/glm/CMakeLists.txt)
+    add_subdirectory(external/glm)
+else()
+    add_library(glm INTERFACE)
+    target_include_directories(glm INTERFACE ${CMAKE_SOURCE_DIR}/external/glm)
+endif()
+
 add_subdirectory(external/glad)
+
 # (We no longer do add_subdirectory(external/glad) because we replaced it above.)
-add_subdirectory(external/ImGuiFileDialog)
+
+if(EXISTS ${CMAKE_SOURCE_DIR}/external/ImGuiFileDialog/CMakeLists.txt)
+    add_subdirectory(external/ImGuiFileDialog)
+else()
+    add_library(ImGuiFileDialog INTERFACE)
+endif()
 
 
 # ────────────────────────────────────────────────────────────────────────────────
 # 10) Fix ImGuiFileDialog include path (so it can find “imgui.h”)
-target_include_directories(ImGuiFileDialog PUBLIC
-		${IM_GUI_INCLUDE}
+target_include_directories(ImGuiFileDialog INTERFACE
+                ${IM_GUI_INCLUDE}
 )
 
 # ────────────────────────────────────────────────────────────────────────────────
@@ -117,25 +151,31 @@ file(COPY "${CMAKE_SOURCE_DIR}/assets" DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 # ────────────────────────────────────────────────────────────────────────────────
 # 13) ImGuizmo integration
-add_library(ImGuizmo
-		${IM_GUIZMO_INCLUDE}/ImGuizmo.cpp
-)
-# ImGuizmo must see “imgui.h” as well, so do:
-target_include_directories(ImGuizmo PUBLIC
-		${IM_GUIZMO_INCLUDE}
-		${IM_GUI_INCLUDE}     # ← so ImGuizmo.cpp can do #include <imgui.h>
-)
+if(EXISTS ${IM_GUI_INCLUDE}/imgui.h AND EXISTS ${IM_GUIZMO_INCLUDE}/ImGuizmo.cpp)
+    add_library(ImGuizmo
+                    ${IM_GUIZMO_INCLUDE}/ImGuizmo.cpp
+    )
+    # ImGuizmo must see “imgui.h” as well, so do:
+    target_include_directories(ImGuizmo PUBLIC
+                    ${IM_GUIZMO_INCLUDE}
+                    ${IM_GUI_INCLUDE}     # ← so ImGuizmo.cpp can do #include <imgui.h>
+    )
+else()
+    add_library(ImGuizmo INTERFACE)
+endif()
 
 # ────────────────────────────────────────────────────────────────────────────────
 # 14) Declare the executable
-add_executable(RendRipper
-                ${SRC_FILES}
-                ${IMGUI_FILES}
-                src/models/MeshRepairer.cpp
-                src/models/MeshRepairer.h
-                src/gcode/GCodeModel.cpp
-                src/gcode/GCodeModel.h
-)
+if(EXISTS ${IM_GUI_INCLUDE}/imgui.h)
+    add_executable(RendRipper
+                    ${SRC_FILES}
+                    ${IMGUI_FILES}
+                    src/models/MeshRepairer.cpp
+                    src/models/MeshRepairer.h
+                    src/gcode/GCodeModel.cpp
+                    src/gcode/GCodeModel.h
+    )
+endif()
 
 # ────────────────────────────────────────────────────────────────────────────────
 # 15) _CuraEngine (imported) example, if you still need it
@@ -154,6 +194,7 @@ endif()
 
 # ────────────────────────────────────────────────────────────────────────────────
 # 16) Optional meshlib availability define (if your code tests MESHLIB_AVAILABLE)
+if(TARGET RendRipper)
 target_compile_definitions(RendRipper PRIVATE
 		PYTHON_EXECUTABLE=\"${CMAKE_CURRENT_SOURCE_DIR}/3DModelGenerator/TripoSR/.venv/Scripts/python.exe\"
 		GENERATE_MODEL_SCRIPT=\"${CMAKE_CURRENT_SOURCE_DIR}/3DModelGenerator/TripoSR/run.py\"
@@ -205,7 +246,10 @@ target_link_libraries(RendRipper PUBLIC
 
 		MeshLibAll         # ← pulls in all .lib files from the correct lib/<CFG> folder
 )
+endif()
 
 # ────────────────────────────────────────────────────────────────────────────────
 # 20) Optional alias so you can write “MeshLib::all” if you like
 add_library(MeshLib::all ALIAS MeshLibAll)
+
+add_subdirectory(tests)
