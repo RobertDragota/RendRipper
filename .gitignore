@@ -2,5 +2,7 @@
 cmake-build-debug-visual-studio/
 cmake-build-release-visual-studio/
 external/*
+!external/doctest/
+!external/doctest/**
 !external/Slic3r/
 !external/Slic3r/**

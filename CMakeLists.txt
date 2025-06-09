@@ -209,3 +209,5 @@ target_link_libraries(RendRipper PUBLIC
 # ────────────────────────────────────────────────────────────────────────────────
 # 20) Optional alias so you can write “MeshLib::all” if you like
 add_library(MeshLib::all ALIAS MeshLibAll)
+
+add_subdirectory(tests)
