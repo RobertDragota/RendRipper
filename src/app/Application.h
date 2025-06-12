@@ -7,6 +7,10 @@
 #include "GizmoController.h"
 #include "WindowManager.h"
 #include "UIManager.h"
+#include <future>
+#include <mutex>
+#include <thread>
+#include <atomic>
 
 class Application {
 public:
@@ -25,4 +29,9 @@ private:
     GizmoController  gizmo_;
     CameraController camera_;
     UIManager        ui_;
+    std::mutex       renderMutex_;
+    std::thread      renderThread_;
+    std::atomic<bool> running_{false};
+
+    void RenderLoop();
 };

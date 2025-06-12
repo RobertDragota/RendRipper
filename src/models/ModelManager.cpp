@@ -14,6 +14,7 @@
 #include "ShaderCache.h"
 
 int ModelManager::LoadModel(const std::string &modelPath) {
+    std::lock_guard<std::mutex> lk(mutex_);
     std::string directory = modelPath.substr(0, modelPath.find_last_of("/\\"));
     std::string output = directory + "/output.stl";
     MeshRepairer::repairSTLFile(modelPath, output);
@@ -63,6 +64,7 @@ int ModelManager::LoadModel(const std::string &modelPath) {
 }
 
 void ModelManager::UnloadModel(int index) {
+    std::lock_guard<std::mutex> lk(mutex_);
     if (index < 0 || index >= static_cast<int>(models_.size())) return;
     models_.erase(models_.begin() + index);
     shaders_.erase(shaders_.begin() + index);
@@ -72,6 +74,7 @@ void ModelManager::UnloadModel(int index) {
 }
 
 void ModelManager::EnforceGridConstraint(int index) {
+    std::lock_guard<std::mutex> lk(mutex_);
     if (index < 0 || index >= static_cast<int>(models_.size())) return;
     Model &model = *models_[index];
     Transform &transform = *transforms_[index];
@@ -99,6 +102,7 @@ void ModelManager::EnforceGridConstraint(int index) {
 }
 
 void ModelManager::UpdateDimensions(int index) {
+    std::lock_guard<std::mutex> lk(mutex_);
     if (index < 0 || index >= static_cast<int>(models_.size())) return;
     glm::vec3 base = models_[index]->maxBounds - models_[index]->minBounds;
     glm::vec3 sc = transforms_[index]->scale;
@@ -107,6 +111,7 @@ void ModelManager::UpdateDimensions(int index) {
 
 
 void ModelManager::ExportTransformedModel(int index, const std::string &outPath) const {
+    std::lock_guard<std::mutex> lk(mutex_);
 
     if (index < 0 || index >= static_cast<int>(models_.size())) return;
 

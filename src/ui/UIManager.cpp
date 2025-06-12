@@ -42,6 +42,36 @@ UIManager::UIManager(ModelManager& mm, SceneRenderer* renderer,
     loadModelSettings();
 }
 
+UIManager::~UIManager()
+{
+    if (modelLoadThread_.joinable())
+        modelLoadThread_.join();
+    if (gcodeLoadThread_.joinable())
+        gcodeLoadThread_.join();
+}
+
+void UIManager::LoadModelAsync(const std::string &modelPath)
+{
+    if (modelLoading_.load()) return;
+    modelLoading_.store(true);
+    modelLoadThread_ = std::thread([this, modelPath]() {
+        std::string path = modelPath;
+        loadModel(path);
+        modelLoading_.store(false);
+    });
+}
+
+void UIManager::LoadGCodeAsync(const std::string &gcodePath)
+{
+    if (gcodeLoading_.load()) return;
+    gcodeLoading_.store(true);
+    gcodeLoadThread_ = std::thread([this, gcodePath]() {
+        std::string p = gcodePath;
+        loadGCode(p);
+        gcodeLoading_.store(false);
+    });
+}
+
 void UIManager::Frame() {
     ImGuizmo::BeginFrame();
     glm::mat4 viewMat;
@@ -95,24 +125,11 @@ void UIManager::showMenuBar() {
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("Open 3D Model")) {
-                openFileDialog([this](std::string& selected){ loadModel(selected); });
+                openFileDialog([this](std::string& selected){ LoadModelAsync(selected); });
             }
             if (ImGui::MenuItem("Open G-code")) {
                 openFileDialog([this](std::string& selected){
-                    try {
-                        gcodeModel_ = std::make_shared<GCodeModel>(selected);
-                        if (renderer_) {
-                            glm::vec3 c = gcodeModel_->GetCenter();
-                            glm::vec3 offset(renderer_->GetBedHalfWidth() - c.x,
-                                             renderer_->GetBedHalfDepth() - c.y,
-                                             0.f);
-                            renderer_->SetGCodeOffset(offset);
-                            renderer_->SetGCodeModel(gcodeModel_);
-                        }
-                        currentGCodeLayer_ = -1;
-                    } catch (const std::exception& e) {
-                        std::cerr << "Failed to load G-code: " << e.what() << std::endl;
-                    }
+                    LoadGCodeAsync(selected);
                 });
             }
             if (activeModel_ != -1 && ImGui::MenuItem("Slice Model")) {
