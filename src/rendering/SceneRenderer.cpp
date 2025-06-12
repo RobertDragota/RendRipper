@@ -35,7 +35,7 @@ SceneRenderer::SceneRenderer(const std::string &printerDefJsonPath)
     }
 
     InitializeDefaultTexture();
-    framebuffer_.Init(viewportWidth_, viewportHeight_);
+    framebuffer_.Init(viewportWidth_, viewportHeight_, 4);
     InitializeGrid();
     InitializeVolumeBox();
     InitializeAxes();
