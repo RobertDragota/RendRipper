@@ -120,6 +120,7 @@ void WindowManager::InitGLFW() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_SAMPLES, 4);
 }
 
 void WindowManager::InitWindow(const char* title, int w, int h) {
@@ -141,6 +142,7 @@ void WindowManager::InitGLAD() {
     }
     glEnable(GL_LINE_SMOOTH);
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+    glEnable(GL_MULTISAMPLE);
     glEnable(GL_DEPTH_TEST);
 }
 
