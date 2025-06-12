@@ -49,20 +49,11 @@ SceneRenderer::SceneRenderer(const std::string &printerDefJsonPath)
     SetViewportSize(viewportWidth_, viewportHeight_);
 }
 
-SceneRenderer::~SceneRenderer()
-{
-    if (defaultWhiteTex_) glDeleteTextures(1, &defaultWhiteTex_);
-}
+SceneRenderer::~SceneRenderer() = default;
 
 void SceneRenderer::InitializeDefaultTexture()
 {
-    glGenTextures(1, &defaultWhiteTex_);
-    glBindTexture(GL_TEXTURE_2D, defaultWhiteTex_);
-    unsigned char whitePixel[4] = {255,255,255,255};
-    glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,1,1,0,GL_RGBA,GL_UNSIGNED_BYTE,whitePixel);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glBindTexture(GL_TEXTURE_2D,0);
+    defaultWhiteTex_ = TextureCache::GetSolidColorTexture(255, 255, 255, 255);
 }
 
 
@@ -119,7 +110,7 @@ void SceneRenderer::RenderModel(const Model &model, Shader &shader, const Transf
     if (shader.hasUniform("viewPos")) shader.setVec3("viewPos", cameraWorldPosition);
     if (shader.hasUniform("lightPos")) shader.setVec3("lightPos", cameraWorldPosition);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, defaultWhiteTex_);
+    glBindTexture(GL_TEXTURE_2D, defaultWhiteTex_ ? defaultWhiteTex_->id : 0);
     if (shader.hasUniform("texture_diffuse1")) shader.setInt("texture_diffuse1",0);
     if (shader.hasUniform("objectColor")) shader.setVec4("objectColor", glm::vec4(0.7f,0.7f,0.7f,1.0f));
     model.Draw(shader);

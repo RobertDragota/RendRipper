@@ -32,6 +32,34 @@ std::shared_ptr<Texture> TextureCache::Get(const std::string& path, const std::s
     return tex;
 }
 
+std::shared_ptr<Texture> TextureCache::GetSolidColorTexture(unsigned char r,
+                                                             unsigned char g,
+                                                             unsigned char b,
+                                                             unsigned char a)
+{
+    std::string key = "solid:" + std::to_string(r) + '_' +
+                      std::to_string(g) + '_' +
+                      std::to_string(b) + '_' +
+                      std::to_string(a);
+    auto it = cache_.find(key);
+    if (it != cache_.end()) {
+        if (auto sp = it->second.lock()) return sp;
+    }
+    auto tex = std::make_shared<Texture>();
+    tex->type = "solid";
+    tex->path = key;
+    glGenTextures(1, &tex->id);
+    unsigned char pixel[4] = { r, g, b, a };
+    glBindTexture(GL_TEXTURE_2D, tex->id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                 pixel);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    cache_[key] = tex;
+    return tex;
+}
+
 void TextureCache::Clear(){
     cache_.clear();
 }
