@@ -375,16 +375,45 @@ void UIManager::sliceActiveModel()
 
 void UIManager::loadModel(std::string &modelPath)
 {
+    std::lock_guard<std::mutex> lk(modelLoadMutex_);
     try
-        {
+    {
         activeModel_ = modelManager_.LoadModel(modelPath);
-        }
+    }
     catch (const std::exception &e)
-        {
+    {
         errorModalMessage_ = "Failed to load model: " + modelPath + "\n" + e.what();
         std::cout << errorModalMessage_ << std::endl;
         showErrorModal_ = true;
+    }
+}
+
+void UIManager::loadGCode(std::string &gcodePath)
+{
+    std::lock_guard<std::mutex> lk(gcodeLoadMutex_);
+    try
+    {
+        auto gm = std::make_shared<GCodeModel>(gcodePath);
+        glm::vec3 offset(0.f);
+        if (renderer_)
+        {
+            glm::vec3 c = gm->GetCenter();
+            offset = glm::vec3(renderer_->GetBedHalfWidth() - c.x,
+                               renderer_->GetBedHalfDepth() - c.y,
+                               0.f);
+            renderer_->SetGCodeOffset(offset);
+            renderer_->SetGCodeModel(gm);
         }
+        {
+            std::lock_guard<std::mutex> lk2(gcodeMutex_);
+            gcodeModel_ = gm;
+        }
+        currentGCodeLayer_ = -1;
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Failed to load G-code: " << e.what() << std::endl;
+    }
 }
 
 void UIManager::UnloadModel(int idx)
@@ -658,10 +687,15 @@ void UIManager::openModelPropertiesDialog()
                 saveModelSettings();
             }
         }
-    if (gcodeModel_)
+    std::shared_ptr<GCodeModel> localGcode;
+    {
+        std::lock_guard<std::mutex> lk(gcodeMutex_);
+        localGcode = gcodeModel_;
+    }
+    if (localGcode)
         {
-        int layerCount = gcodeModel_->GetLayerCount();
-        auto layerHeights = gcodeModel_->GetLayerHeights();
+        int layerCount = localGcode->GetLayerCount();
+        auto layerHeights = localGcode->GetLayerHeights();
         if (currentGCodeLayer_ < -1)
             currentGCodeLayer_ = -1;
         if (currentGCodeLayer_ > layerCount - 1)
@@ -767,7 +801,10 @@ void UIManager::finalizeSlicing()
             renderer_->SetGCodeOffset(offset);
             renderer_->SetGCodeModel(gm);
             }
-        gcodeModel_ = gm;
+        {
+            std::lock_guard<std::mutex> lk(gcodeMutex_);
+            gcodeModel_ = gm;
+        }
         currentGCodeLayer_ = -1;
         UnloadModel(slicingModelIndex_);
         std::filesystem::remove(pendingResizedPath_);
