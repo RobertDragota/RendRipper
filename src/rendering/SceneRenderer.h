@@ -47,9 +47,27 @@ private:
     void InitializeAxes();
     void RenderGridAndVolume();
     void RenderAxes();
+    void InitGBuffer();
+    void ResizeGBuffer(int width, int height);
+    void InitQuad();
+    void RenderQuad();
 
     FrameBuffer framebuffer_;
     std::shared_ptr<Texture> defaultWhiteTex_;
+
+    GLuint gBuffer_ = 0;
+    GLuint gPosition_ = 0;
+    GLuint gNormal_ = 0;
+    GLuint gAlbedo_ = 0;
+    GLuint gDepthRBO_ = 0;
+
+    GLuint quadVAO_ = 0;
+    GLuint quadVBO_ = 0;
+
+    std::unique_ptr<Shader> deferredGeomShader_;
+    std::unique_ptr<Shader> deferredLightingShader_;
+
+    bool inGeometryPass_ = false;
 
     glm::vec3 gridColor_ = glm::vec3(0.4f, 0.4f, 0.45f);
     int viewportWidth_ = 1;
