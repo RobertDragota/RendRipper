@@ -8,6 +8,7 @@
 #include "VolumeBoxRenderer.h"
 #include "AxesRenderer.h"
 #include "FrameBuffer.h"
+#include "TextureCache.h"
 using json = nlohmann::json;
 
 class Shader;
@@ -48,7 +49,7 @@ private:
     void RenderAxes();
 
     FrameBuffer framebuffer_;
-    GLuint     defaultWhiteTex_ = 0;
+    std::shared_ptr<Texture> defaultWhiteTex_;
 
     glm::vec3 gridColor_ = glm::vec3(0.4f, 0.4f, 0.45f);
     int viewportWidth_ = 1;
