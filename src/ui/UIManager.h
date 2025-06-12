@@ -2,6 +2,7 @@
 #include <memory>
 #include <atomic>
 #include <mutex>
+#include <future>
 #include <string>
 #include <filesystem>
 #include <vector>
@@ -31,6 +32,11 @@ public:
         GLFWwindow *window
     );
 
+    ~UIManager();
+
+    void LoadModelAsync(const std::string &modelPath);
+    void LoadGCodeAsync(const std::string &gcodePath);
+
     void Frame();
 
 private:
@@ -47,6 +53,15 @@ private:
     void saveModelSettings();
 
     void loadModel(std::string &modelPath);
+    void loadGCode(std::string &gcodePath);
+
+    std::future<void> modelLoadFuture_;
+    std::atomic<bool> modelLoading_{false};
+    std::mutex modelLoadMutex_;
+    std::future<void> gcodeLoadFuture_;
+    std::atomic<bool> gcodeLoading_{false};
+    std::mutex gcodeLoadMutex_;
+    std::mutex gcodeMutex_;
 
     void loadImageFor3DModel(std::string &imagePath);
 

@@ -9,6 +9,7 @@
 #include "AxesRenderer.h"
 #include "FrameBuffer.h"
 #include "TextureCache.h"
+#include <mutex>
 using json = nlohmann::json;
 
 class Shader;
@@ -36,7 +37,7 @@ public:
     float GetBedHalfDepth() const { return volumeHalfY_; }
     float GetPrintHeight() const { return volumeHeight_; }
 
-    void SetGCodeModel(std::shared_ptr<GCodeModel> gcodeModel) { gcodeModel_ = gcodeModel; }
+    void SetGCodeModel(std::shared_ptr<GCodeModel> gcodeModel);
     void SetGCodeOffset(const glm::vec3& offset) { gcodeOffset_ = offset; }
     int currentGCodeLayerIndex_ = -1;
 
@@ -64,6 +65,7 @@ private:
     float volumeHeight_;
 
     std::shared_ptr<GCodeModel> gcodeModel_;
+    mutable std::mutex gcodeMutex_;
     std::unique_ptr<Shader> gcodeShader_;
 
     glm::vec3 gcodeOffset_ = glm::vec3(0.0f);

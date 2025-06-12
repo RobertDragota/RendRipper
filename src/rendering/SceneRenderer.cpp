@@ -130,24 +130,40 @@ void SceneRenderer::RenderAxes()
 
 void SceneRenderer::RenderGCodeLayer(int layerIndex)
 {
-    if (!gcodeModel_ || !gcodeShader_) return;
+    std::shared_ptr<GCodeModel> local;
+    {
+        std::lock_guard<std::mutex> lk(gcodeMutex_);
+        local = gcodeModel_;
+    }
+    if (!local || !gcodeShader_) return;
     gcodeShader_->use();
     glm::mat4 modelMat(1.0f);
     modelMat = glm::translate(modelMat, glm::vec3(-volumeHalfX_, -volumeHalfY_, 0.0f) + gcodeOffset_);
     gcodeShader_->setMat4("model", modelMat);
     gcodeShader_->setMat4("view", viewMatrix_);
     gcodeShader_->setMat4("projection", projectionMatrix_);
-    gcodeModel_->DrawLayer(layerIndex, *gcodeShader_);
+    local->DrawLayer(layerIndex, *gcodeShader_);
 }
 
 void SceneRenderer::RenderGCodeUpToLayer(int maxLayerIndex)
 {
-    if (!gcodeModel_ || !gcodeShader_) return;
+    std::shared_ptr<GCodeModel> local;
+    {
+        std::lock_guard<std::mutex> lk(gcodeMutex_);
+        local = gcodeModel_;
+    }
+    if (!local || !gcodeShader_) return;
     gcodeShader_->use();
     glm::mat4 modelMat(1.0f);
     modelMat = glm::translate(modelMat, glm::vec3(-volumeHalfX_, -volumeHalfY_, 0.0f) + gcodeOffset_);
     gcodeShader_->setMat4("model", modelMat);
     gcodeShader_->setMat4("view", viewMatrix_);
     gcodeShader_->setMat4("projection", projectionMatrix_);
-    gcodeModel_->DrawUpToLayer(maxLayerIndex, *gcodeShader_);
+    local->DrawUpToLayer(maxLayerIndex, *gcodeShader_);
+}
+
+void SceneRenderer::SetGCodeModel(std::shared_ptr<GCodeModel> gcodeModel)
+{
+    std::lock_guard<std::mutex> lk(gcodeMutex_);
+    gcodeModel_ = std::move(gcodeModel);
 }
