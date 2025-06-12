@@ -55,10 +55,12 @@ private:
     void loadModel(std::string &modelPath);
     void loadGCode(std::string &gcodePath);
 
+
     std::future<void> modelLoadFuture_;
     std::atomic<bool> modelLoading_{false};
     std::mutex modelLoadMutex_;
     std::future<void> gcodeLoadFuture_;
+
     std::atomic<bool> gcodeLoading_{false};
     std::mutex gcodeLoadMutex_;
     std::mutex gcodeMutex_;

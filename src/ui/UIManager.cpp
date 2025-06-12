@@ -44,17 +44,21 @@ UIManager::UIManager(ModelManager& mm, SceneRenderer* renderer,
 
 UIManager::~UIManager()
 {
+
     if (modelLoadFuture_.valid())
         modelLoadFuture_.wait();
     if (gcodeLoadFuture_.valid())
         gcodeLoadFuture_.wait();
+
 }
 
 void UIManager::LoadModelAsync(const std::string &modelPath)
 {
     if (modelLoading_.load()) return;
     modelLoading_.store(true);
+
     modelLoadFuture_ = std::async(std::launch::async, [this, modelPath]() {
+
         std::string path = modelPath;
         loadModel(path);
         modelLoading_.store(false);
@@ -65,7 +69,9 @@ void UIManager::LoadGCodeAsync(const std::string &gcodePath)
 {
     if (gcodeLoading_.load()) return;
     gcodeLoading_.store(true);
+
     gcodeLoadFuture_ = std::async(std::launch::async, [this, gcodePath]() {
+
         std::string p = gcodePath;
         loadGCode(p);
         gcodeLoading_.store(false);
