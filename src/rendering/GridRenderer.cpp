@@ -30,7 +30,9 @@ void GridRenderer::Init(float halfX, float halfY)
                                       "../../resources/shaders/infinite_grid.frag");
 }
 
-void GridRenderer::Render(const glm::mat4 &view, const glm::mat4 &proj, const glm::vec3 &offset)
+void GridRenderer::Render(const glm::mat4 &view, const glm::mat4 &proj,
+                          const glm::vec3 &offset,
+                          const glm::vec3 &lineColor)
 {
     if (!shader_ || vao_ == 0) return;
     glEnable(GL_BLEND);
@@ -42,7 +44,8 @@ void GridRenderer::Render(const glm::mat4 &view, const glm::mat4 &proj, const gl
     glm::mat4 model = glm::translate(glm::mat4(1.0f), offset);
     shader_->setMat4("model", model);
     if (shader_->hasUniform("gridSpacing")) shader_->setFloat("gridSpacing", 5.0f);
-    if (shader_->hasUniform("lineWidth")) shader_->setFloat("lineWidth", 0.5f);
+    if (shader_->hasUniform("lineWidthFactor")) shader_->setFloat("lineWidthFactor", 0.5f);
+    if (shader_->hasUniform("u_lineColor")) shader_->setVec3("u_lineColor", lineColor);
     glBindVertexArray(vao_);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
