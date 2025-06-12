@@ -127,7 +127,7 @@ void SceneRenderer::RenderModel(const Model &model, Shader &shader, const Transf
 
 void SceneRenderer::RenderGridAndVolume()
 {
-    gridRenderer_.Render(viewMatrix_, projectionMatrix_);
+    gridRenderer_.Render(viewMatrix_, projectionMatrix_, gridColor_);
     volumeBoxRenderer_.Render(viewMatrix_, projectionMatrix_, gridColor_);
     RenderAxes();
 }
