@@ -51,7 +51,7 @@ private:
     FrameBuffer framebuffer_;
     std::shared_ptr<Texture> defaultWhiteTex_;
 
-    glm::vec3 gridColor_ = glm::vec3(0.4f, 0.4f, 0.45f);
+    glm::vec3 gridColor_ = glm::vec3(0.6f, 0.6f, 0.65f);
     int viewportWidth_ = 1;
     int viewportHeight_ = 1;
 

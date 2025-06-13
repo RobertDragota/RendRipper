@@ -65,6 +65,7 @@ void SceneRenderer::InitializeGrid()
 void SceneRenderer::InitializeVolumeBox()
 {
     volumeBoxRenderer_.Init(volumeHalfX_, volumeHalfY_, volumeHeight_);
+    volumeBoxRenderer_.SetLineWidth(2.0f);
 }
 
 void SceneRenderer::InitializeAxes()

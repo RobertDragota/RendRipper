@@ -36,6 +36,8 @@ void VolumeBoxRenderer::Render(const glm::mat4 &view, const glm::mat4 &proj, con
     shader_->setMat4("model", glm::mat4(1.0f));
     if (shader_->hasUniform("lineColor")) shader_->setVec3("lineColor", color);
     glBindVertexArray(vao_);
+    glLineWidth(lineWidth_);
     glDrawArrays(GL_LINES, 0, 24);
+    glLineWidth(1.0f);
     glBindVertexArray(0);
 }
