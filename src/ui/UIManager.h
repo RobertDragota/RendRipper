@@ -46,7 +46,9 @@ private:
 
     void saveModelSettings();
 
-    void loadModel(std::string &modelPath);
+    void loadModelSync(std::string &modelPath);
+    void loadModelAsync(std::string modelPath);
+    void showLoadingModal();
 
     void loadImageFor3DModel(std::string &imagePath);
 
@@ -92,6 +94,11 @@ private:
     std::string slicingMessage_;
     std::mutex slicingMessageMutex_;
     std::atomic<float> slicingProgress_{0.0f};
+
+    std::atomic<bool> loadingModel_{false};
+    std::atomic<bool> loadingDone_{false};
+    std::string loadingMessage_;
+    std::mutex loadingMessageMutex_;
 
     bool showWireframe_ = false;
     bool useOrtho_ = false;

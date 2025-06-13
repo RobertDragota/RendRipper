@@ -193,7 +193,7 @@ void UIManager::showGenerationModal()
                 {
                 ImGui::CloseCurrentPopup();
                 std::string path = std::string(OUTPUT_DIR) + "/0/mesh.obj";
-                loadModel(path);
+                loadModelAsync(path);
                 generationDone_.store(false);
                 }
             }
@@ -246,6 +246,45 @@ void UIManager::showSlicingModal()
                 {
                 ImGui::CloseCurrentPopup();
                 slicingDone_.store(false);
+                }
+            }
+        ImGui::EndPopup();
+        }
+}
+
+void UIManager::showLoadingModal()
+{
+    if (loadingModel_.load())
+        {
+        ImGui::OpenPopup("Loading Model");
+        loadingModel_.store(false);
+        }
+    ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_Appearing);
+    ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    if (ImGui::BeginPopupModal("Loading Model", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+        const char *prompt = "Please wait";
+        float ww = ImGui::GetWindowWidth();
+        float tw = ImGui::CalcTextSize(prompt).x;
+        ImGui::SetCursorPosX((ww - tw) * 0.5f);
+        ImGui::Text("%s", prompt);
+        ImGui::Spacing();
+        {
+            std::lock_guard<std::mutex> lk(loadingMessageMutex_);
+            std::string msg = loadingMessage_;
+            float tw2 = ImGui::CalcTextSize(msg.c_str()).x;
+            ImGui::SetCursorPosX((ww - tw2) * 0.5f);
+            ImGui::Text("%s", msg.c_str());
+        }
+        if (loadingDone_.load())
+            {
+            ImGui::Spacing();
+            float bw = 120.f;
+            ImGui::SetCursorPosX((ww - bw) * 0.5f);
+            if (ImGui::Button("Close", ImVec2(bw, 0)))
+                {
+                ImGui::CloseCurrentPopup();
+                loadingDone_.store(false);
                 }
             }
         ImGui::EndPopup();
@@ -373,7 +412,7 @@ void UIManager::sliceActiveModel()
         }).detach();
 }
 
-void UIManager::loadModel(std::string &modelPath)
+void UIManager::loadModelSync(std::string &modelPath)
 {
     try
         {
@@ -385,6 +424,35 @@ void UIManager::loadModel(std::string &modelPath)
         std::cout << errorModalMessage_ << std::endl;
         showErrorModal_ = true;
         }
+}
+
+void UIManager::loadModelAsync(std::string modelPath)
+{
+    loadingModel_.store(true);
+    loadingDone_.store(false);
+    std::thread([this, modelPath]()
+        {
+        {
+            std::lock_guard lk(loadingMessageMutex_);
+            loadingMessage_ = "Loading model...";
+        }
+        try
+            {
+            int idx = modelManager_.LoadModel(modelPath);
+            activeModel_ = idx;
+            {
+                std::lock_guard lk(loadingMessageMutex_);
+                loadingMessage_ = "Model loaded.";
+            }
+            }
+        catch (const std::exception &e)
+            {
+            std::lock_guard lk(loadingMessageMutex_);
+            loadingMessage_ = std::string("Failed to load model: ") + e.what();
+            showErrorModal_ = true;
+            }
+        loadingDone_.store(true);
+        }).detach();
 }
 
 void UIManager::UnloadModel(int idx)

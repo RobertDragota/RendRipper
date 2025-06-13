@@ -52,6 +52,7 @@ void UIManager::Frame() {
     openRenderScene();
     showGenerationModal();
     showSlicingModal();
+    showLoadingModal();
     showErrorModal(errorModalMessage_);
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
@@ -95,7 +96,7 @@ void UIManager::showMenuBar() {
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("Open 3D Model")) {
-                openFileDialog([this](std::string& selected){ loadModel(selected); });
+                openFileDialog([this](std::string& selected){ loadModelAsync(selected); });
             }
             if (ImGui::MenuItem("Open G-code")) {
                 openFileDialog([this](std::string& selected){
