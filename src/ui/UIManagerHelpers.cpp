@@ -33,6 +33,11 @@
 
 using json = nlohmann::json;
 
+/**
+ * @file UIManagerHelpers.cpp
+ * @brief Auxiliary functions for the UIManager class.
+ */
+
 namespace
 {
     bool RayIntersectSphere
@@ -49,6 +54,7 @@ namespace
     }
 }
 
+/** Present a file open dialog and return the selected path. */
 void UIManager::openFileDialog(const std::function<void(std::string &)> &onFileSelected)
 {
 #ifdef _WIN32
@@ -71,6 +77,7 @@ void UIManager::openFileDialog(const std::function<void(std::string &)> &onFileS
 #endif
 }
 
+/** Launch the TripoSR script to create a model from an image. */
 void UIManager::loadImageFor3DModel(std::string &imagePath)
 {
     generating_.store(true);
@@ -137,6 +144,7 @@ void UIManager::loadImageFor3DModel(std::string &imagePath)
         }).detach();
 }
 
+/** Display a pop-up error dialog. */
 void UIManager::showErrorModal(std::string &message)
 {
     if (showErrorModal_)
@@ -153,6 +161,7 @@ void UIManager::showErrorModal(std::string &message)
         }
 }
 
+/** Update and display the model generation progress window. */
 void UIManager::showGenerationModal()
 {
     if (generating_.load())
@@ -201,6 +210,7 @@ void UIManager::showGenerationModal()
         }
 }
 
+/** Update and display the slicing progress window. */
 void UIManager::showSlicingModal()
 {
     if (loadGcodePending_.load())
@@ -252,6 +262,7 @@ void UIManager::showSlicingModal()
         }
 }
 
+/** Invoke CuraEngine to slice the active model. */
 void UIManager::sliceActiveModel()
 {
     if (activeModel_ < 0 || activeModel_ >= static_cast<int>(modelManager_.Count()))
@@ -736,6 +747,7 @@ void UIManager::renderModels(glm::mat4 &)
         }
 }
 
+/** Load generated G-code and remove temporary files. */
 void UIManager::finalizeSlicing()
 {
     try
@@ -781,6 +793,7 @@ void UIManager::finalizeSlicing()
         }
 }
 
+/** Read model and printer settings from JSON files. */
 void UIManager::loadModelSettings()
 {
     try
@@ -828,6 +841,7 @@ void UIManager::loadModelSettings()
         }
 }
 
+/** Persist current model settings to disk. */
 void UIManager::saveModelSettings()
 {
     if (!modelSettingsLoaded_)

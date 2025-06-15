@@ -3,8 +3,14 @@
 #include <sstream>
 #include <stdexcept>
 
+/**
+ * @file IO_utility.cpp
+ * @brief Simple file reading helpers.
+ */
+
 namespace IO_utility {
 
+/** Read entire file contents into a string. */
 std::string FileReader::ReadTextFile(const std::string &path) const
 {
     std::ifstream in(path);

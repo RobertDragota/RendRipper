@@ -2,10 +2,14 @@
 #include <cstdio>
 #include <string>
 
-// Simple RAII wrapper for popen/_popen
+// Simple RAII wrapper for popen/_popen.
 // Opens a read-only pipe and ensures it is closed.
 // Use get() to read from the pipe and close() to
 // retrieve the process return code.
+
+/**
+ * @brief Lightweight wrapper around a platform pipe handle.
+ */
 class Pipe {
 public:
     explicit Pipe(const std::string &cmd) {

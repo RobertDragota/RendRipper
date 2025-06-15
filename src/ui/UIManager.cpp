@@ -32,8 +32,16 @@
 
 using json = nlohmann::json;
 
+/**
+ * @file UIManager.cpp
+ * @brief Implements the main ImGui user interface.
+ */
 
 
+
+/**
+ * @brief Construct the UI manager tying together rendering and control.
+ */
 UIManager::UIManager(ModelManager& mm, SceneRenderer* renderer,
                      GizmoController& gizmo, CameraController& camera,
                      GLFWwindow* window)
@@ -42,6 +50,7 @@ UIManager::UIManager(ModelManager& mm, SceneRenderer* renderer,
     loadModelSettings();
 }
 
+/** Render all UI windows for the current frame. */
 void UIManager::Frame() {
     ImGuizmo::BeginFrame();
     glm::mat4 viewMat;

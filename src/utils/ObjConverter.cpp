@@ -5,6 +5,12 @@
 #include <assimp/scene.h>
 #include <stdexcept>
 
+/**
+ * @file ObjConverter.cpp
+ * @brief Implementation of OBJ to STL conversion helper.
+ */
+
+/** Convert an OBJ file to an STL file using Assimp. */
 void ObjConverter::Convert(const std::string &inObjPath, const std::string &outStlPath)
 {
     if (inObjPath.empty() || outStlPath.empty()) {

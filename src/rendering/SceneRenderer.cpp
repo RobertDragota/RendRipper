@@ -7,6 +7,14 @@
 #include <glm/gtx/quaternion.hpp>
 #include <iostream>
 
+/**
+ * @file SceneRenderer.cpp
+ * @brief Implements the main scene rendering routines.
+ */
+
+/**
+ * @brief Construct the renderer using printer volume settings.
+ */
 SceneRenderer::SceneRenderer(const std::string &printerDefJsonPath)
 {
     if (!printerDefJsonPath.empty()) {
@@ -49,30 +57,36 @@ SceneRenderer::SceneRenderer(const std::string &printerDefJsonPath)
     SetViewportSize(viewportWidth_, viewportHeight_);
 }
 
+/** @brief Default destructor. */
 SceneRenderer::~SceneRenderer() = default;
 
+/** Setup the fallback white texture used when models lack textures. */
 void SceneRenderer::InitializeDefaultTexture()
 {
     defaultWhiteTex_ = TextureCache::GetSolidColorTexture(255, 255, 255, 255);
 }
 
 
+/** Prepare the ground grid mesh. */
 void SceneRenderer::InitializeGrid()
 {
     gridRenderer_.Init(volumeHalfX_, volumeHalfY_);
 }
 
+/** Prepare the printer volume outline. */
 void SceneRenderer::InitializeVolumeBox()
 {
     volumeBoxRenderer_.Init(volumeHalfX_, volumeHalfY_, volumeHeight_);
     volumeBoxRenderer_.SetLineWidth(2.0f);
 }
 
+/** Initialize the small orientation axes. */
 void SceneRenderer::InitializeAxes()
 {
     axesRenderer_.Init();
 }
 
+/** Resize framebuffer and projection based on viewport size. */
 void SceneRenderer::SetViewportSize(int width, int height)
 {
     if (width <= 0) width = 1;
@@ -83,6 +97,7 @@ void SceneRenderer::SetViewportSize(int width, int height)
 }
 
 
+/** Begin rendering a new frame. */
 void SceneRenderer::BeginScene(const glm::mat4 &viewMatrix, const glm::vec3 &)
 {
     viewMatrix_ = viewMatrix;
@@ -94,11 +109,13 @@ void SceneRenderer::BeginScene(const glm::mat4 &viewMatrix, const glm::vec3 &)
     RenderGridAndVolume();
 }
 
+/** Finish rendering and resolve the framebuffer. */
 void SceneRenderer::EndScene()
 {
     framebuffer_.Unbind();
 }
 
+/** Render a model with the given shader and transform. */
 void SceneRenderer::RenderModel(const Model &model, Shader &shader, const Transform &transform)
 {
     if (shader.ID == 0) return;
@@ -117,6 +134,7 @@ void SceneRenderer::RenderModel(const Model &model, Shader &shader, const Transf
     model.Draw(shader);
 }
 
+/** Draw the ground grid and build volume. */
 void SceneRenderer::RenderGridAndVolume()
 {
     gridRenderer_.Render(viewMatrix_, projectionMatrix_, gridColor_);
@@ -124,11 +142,13 @@ void SceneRenderer::RenderGridAndVolume()
     RenderAxes();
 }
 
+/** Draw the small axis widget. */
 void SceneRenderer::RenderAxes()
 {
     axesRenderer_.Render(viewMatrix_, projectionMatrix_, glm::vec3(-volumeHalfX_, -volumeHalfY_, 0.f));
 }
 
+/** Render only a specific G-code layer. */
 void SceneRenderer::RenderGCodeLayer(int layerIndex)
 {
     if (!gcodeModel_ || !gcodeShader_) return;
@@ -141,6 +161,7 @@ void SceneRenderer::RenderGCodeLayer(int layerIndex)
     gcodeModel_->DrawLayer(layerIndex, *gcodeShader_);
 }
 
+/** Render G-code layers from 0 to the provided index. */
 void SceneRenderer::RenderGCodeUpToLayer(int maxLayerIndex)
 {
     if (!gcodeModel_ || !gcodeShader_) return;

@@ -6,6 +6,14 @@
 #include <stdexcept>
 #include <iostream>
 
+/**
+ * @file Shader.cpp
+ * @brief Implementation of the Shader utility class.
+ */
+
+/**
+ * @brief Construct a shader program from file paths.
+ */
 Shader::Shader(const char *vPath, const char *fPath, const char *gPath)
 {
     ShaderModule v, f, g;
@@ -15,6 +23,9 @@ Shader::Shader(const char *vPath, const char *fPath, const char *gPath)
     *this = Shader(std::move(v), std::move(f), std::move(g));
 }
 
+/**
+ * @brief Construct from already compiled shader modules.
+ */
 Shader::Shader(ShaderModule &&vert, ShaderModule &&frag, ShaderModule &&geom)
 {
     ID = glCreateProgram();
@@ -33,6 +44,7 @@ Shader::Shader(ShaderModule &&vert, ShaderModule &&frag, ShaderModule &&geom)
     }
 }
 
+/** @brief Destroy the OpenGL program. */
 Shader::~Shader()
 {
     if (ID) {
@@ -41,11 +53,13 @@ Shader::~Shader()
     }
 }
 
+/** Move constructor. */
 Shader::Shader(Shader &&o) noexcept : ID(o.ID), uniformLocationCache(std::move(o.uniformLocationCache))
 {
     o.ID = 0;
 }
 
+/** Move assignment. */
 Shader &Shader::operator=(Shader &&o) noexcept
 {
     if (this != &o) {
@@ -62,6 +76,7 @@ void Shader::use() const noexcept
     if (ID) glUseProgram(ID);
 }
 
+/** Retrieve a uniform location, caching the result. */
 int Shader::getUniformLocation(const std::string &name) const
 {
     auto it = uniformLocationCache.find(name);

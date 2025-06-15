@@ -8,11 +8,16 @@
 
 class ShaderModule;
 
+/**
+ * @brief Small RAII wrapper around an OpenGL shader program.
+ */
 class Shader {
 public:
-    unsigned int ID = 0;
+    unsigned int ID = 0; ///< OpenGL program ID
 
+    /// Load shader modules from files.
     Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr);
+    /// Link from already-created modules.
     Shader(ShaderModule&& vertex, ShaderModule&& fragment, ShaderModule&& geometry);
     ~Shader();
 
@@ -22,6 +27,7 @@ public:
     Shader(const Shader&) = delete;
     Shader& operator=(const Shader&) = delete;
 
+    /// Activate the program for rendering.
     void use() const noexcept;
 
     void setBool(const std::string& name, bool value) const;
@@ -36,5 +42,6 @@ public:
 
 private:
     mutable std::unordered_map<std::string, int> uniformLocationCache;
+    /// Lookup and cache uniform location.
     int getUniformLocation(const std::string& name) const;
 };

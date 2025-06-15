@@ -15,16 +15,25 @@
 
 using namespace MR;
 
+/**
+ * @brief Thin wrapper around MR::MeshLoad utilities.
+ */
 class MeshLoader {
 public:
-    auto Load(const std::string &path) const
-    {
+    /**
+     * @brief Load a mesh from any supported format.
+     */
+    auto Load(const std::string &path) const {
         return MeshLoad::fromAnySupportedFormat(path);
     }
 };
 
+/**
+ * @brief Provides various mesh cleaning operations.
+ */
 class MeshCleaner {
 public:
+    /** @brief Remove degenerate triangles from the mesh. */
     void RemoveDegenerateTriangles(MR::Mesh &mesh) const
     {
         fixMeshDegeneracies(mesh, {
@@ -33,6 +42,7 @@ public:
         });
     }
 
+    /** @brief Fill all topological holes in the mesh. */
     void FillAllHoles(MR::Mesh &mesh) const
     {
         std::vector<EdgeId> holeEdges = mesh.topology.findHoleRepresentiveEdges();
@@ -44,14 +54,19 @@ public:
         }
     }
 
+    /** @brief Perform normal-based mesh denoising. */
     void Cleanup(MR::Mesh &mesh) const
     {
         meshDenoiseViaNormals(mesh);
     }
 };
 
+/**
+ * @brief Helper for saving meshes back to disk.
+ */
 class MeshSaver {
 public:
+    /** @brief Save the given mesh to file. */
     bool Save(const MR::Mesh &mesh, const std::string &path) const
     {
         auto res = MeshSave::toAnySupportedFormat(mesh, path);
@@ -59,14 +74,23 @@ public:
     }
 };
 
+/**
+ * @brief High level mesh repair pipeline using MeshLoader/Cleaner/Saver.
+ */
 class MeshRepairer {
 public:
+    /**
+     * @brief Convenience method to repair an STL file in one call.
+     */
     static bool repairSTLFile(const std::string &inputPath, const std::string &outputPath)
     {
         MeshRepairer repairer;
         return repairer.repair(inputPath, outputPath);
     }
 
+    /**
+     * @brief Run the repair pipeline on the given input file.
+     */
     bool repair(const std::string &inputPath, const std::string &outputPath)
     {
         std::cout << "Loading mesh from: " << inputPath << std::endl;

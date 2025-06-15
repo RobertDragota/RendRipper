@@ -12,6 +12,13 @@
 namespace
 {
 
+    /**
+     * @brief Break down a transformation matrix into translation, scale and rotation.
+     * @param matrix Matrix to decompose.
+     * @param translation Output translation vector.
+     * @param scale Output scale vector.
+     * @param rotation Output rotation quaternion.
+     */
     void DecomposeMatrix
     (
         const glm::mat4 &matrix,
@@ -31,9 +38,15 @@ namespace
         rotation = glm::quat_cast(rot);
     }
 
+    /**
+     * @brief Default gizmo operation that writes decomposed matrix to a transform.
+     */
     class BasicOperation : public IGizmoOperation
     {
     public:
+        /**
+         * @brief Apply the decomposed matrix values to the given transform.
+         */
         void Apply(const glm::mat4 &m, ITransform &t) override
         {
             glm::vec3 tr, sc;
@@ -47,6 +60,9 @@ namespace
 
 } // namespace
 
+/**
+ * @brief Construct a new GizmoController with default mode and operation.
+ */
 GizmoController::GizmoController()
     : currentOp_(ImGuizmo::TRANSLATE),
       currentMode_(ImGuizmo::LOCAL),
@@ -54,6 +70,9 @@ GizmoController::GizmoController()
 {
 }
 
+/**
+ * @brief Manipulate the provided transform using ImGuizmo.
+ */
 void GizmoController::Manipulate
 (
     const glm::mat4 &view,
@@ -95,17 +114,26 @@ void GizmoController::Manipulate
         }
 }
 
+/**
+ * @brief Get the current ImGuizmo operation type.
+ */
 ImGuizmo::OPERATION GizmoController::GetCurrentMode() const
 {
     return currentOp_;
 }
 
+/**
+ * @brief Set a new ImGuizmo operation type.
+ */
 void GizmoController::SetCurrentMode(ImGuizmo::OPERATION operation)
 {
     currentOp_ = operation;
     updateOperation();
 }
 
+/**
+ * @brief Create a new operation implementation matching the current mode.
+ */
 void GizmoController::updateOperation()
 {
     operation_ = std::make_unique<BasicOperation>();

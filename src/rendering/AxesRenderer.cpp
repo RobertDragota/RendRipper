@@ -2,12 +2,19 @@
 #include "Shader.h"
 #include <glm/gtc/matrix_transform.hpp>
 
+/**
+ * @file AxesRenderer.cpp
+ * @brief Renders simple XYZ axes for orientation.
+ */
+
+/** @brief Cleanup OpenGL resources. */
 AxesRenderer::~AxesRenderer()
 {
     if (vao_) glDeleteVertexArrays(1, &vao_);
     if (vbo_) glDeleteBuffers(1, &vbo_);
 }
 
+/** @brief Setup vertex buffers and load the shader. */
 void AxesRenderer::Init()
 {
     const float axisLength = 20.0f;
@@ -30,6 +37,12 @@ void AxesRenderer::Init()
                                        "../../resources/shaders/simple_colored_line.frag");
 }
 
+/**
+ * @brief Draw the axes using the supplied matrices.
+ * @param view View matrix for the scene.
+ * @param proj Projection matrix.
+ * @param offset World space offset for the axes origin.
+ */
 void AxesRenderer::Render(const glm::mat4 &view, const glm::mat4 &proj, const glm::vec3 &offset)
 {
     if (!shader_ || vao_ == 0) return;

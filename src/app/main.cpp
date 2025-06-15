@@ -1,6 +1,9 @@
 #include <iostream>
 #include "Application.h"
 
+/**
+ * @brief Entry point of the application.
+ */
 int main() {
     try {
         Application app(1280, 720, "3D Slicer");

@@ -5,6 +5,9 @@
 #include <vector>
 #include <imgui.h>
 
+/**
+ * @brief Configure ImGui with a custom dark style palette.
+ */
 static void ApplyModernDarkStyle() {
     ImGuiStyle &style = ImGui::GetStyle();
     ImVec4 *colors = style.Colors;
@@ -95,14 +98,23 @@ static void ApplyModernDarkStyle() {
     style.AntiAliasedFill = true;
 }
 
+/**
+ * @brief GLFW error callback used during initialization.
+ */
 static void glfw_error_callback(int error, const char* desc) {
     std::cerr << "GLFW Error " << error << ": " << desc << std::endl;
 }
 
+/**
+ * @brief Adjust OpenGL viewport when the framebuffer is resized.
+ */
 static void framebuffer_size_callback(GLFWwindow*, int w, int h) {
     glViewport(0, 0, w, h);
 }
 
+/**
+ * @brief Create a window and initialize all rendering backends.
+ */
 WindowManager::WindowManager(int width, int height, const char* title) {
     InitGLFW();
     InitWindow(title, width, height);
@@ -110,8 +122,12 @@ WindowManager::WindowManager(int width, int height, const char* title) {
     InitImGui();
 }
 
+/**
+ * @brief Destructor cleans up resources.
+ */
 WindowManager::~WindowManager() { Cleanup(); }
 
+/** @brief Initialize the GLFW library. */
 void WindowManager::InitGLFW() {
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit()) {
@@ -123,6 +139,9 @@ void WindowManager::InitGLFW() {
     glfwWindowHint(GLFW_SAMPLES, 4);
 }
 
+/**
+ * @brief Create the GLFW window and set required callbacks.
+ */
 void WindowManager::InitWindow(const char* title, int w, int h) {
     window_ = glfwCreateWindow(w, h, title, nullptr, nullptr);
     if (!window_) {
@@ -134,6 +153,7 @@ void WindowManager::InitWindow(const char* title, int w, int h) {
     glfwSetFramebufferSizeCallback(window_, framebuffer_size_callback);
 }
 
+/** @brief Load OpenGL functions via GLAD. */
 void WindowManager::InitGLAD() {
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
         glfwDestroyWindow(window_);
@@ -146,6 +166,7 @@ void WindowManager::InitGLAD() {
     glEnable(GL_DEPTH_TEST);
 }
 
+/** @brief Initialize ImGui context and apply styling. */
 void WindowManager::InitImGui() {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -170,16 +191,20 @@ void WindowManager::InitImGui() {
     ImGui_ImplOpenGL3_Init("#version 330 core");
 }
 
+/** @brief Poll window events from GLFW. */
 void WindowManager::PollEvents() { glfwPollEvents(); }
 
+/** @brief Query the close flag from the GLFW window. */
 bool WindowManager::ShouldClose() const { return glfwWindowShouldClose(window_); }
 
+/** @brief Begin a new frame for ImGui rendering. */
 void WindowManager::BeginFrame() {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 }
 
+/** @brief Finish rendering and swap buffers. */
 void WindowManager::EndFrame() {
     ImGui::Render();
     int fb_w, fb_h;
@@ -198,6 +223,7 @@ void WindowManager::EndFrame() {
     glfwSwapBuffers(window_);
 }
 
+/** @brief Release all resources created by the window manager. */
 void WindowManager::Cleanup() {
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();

@@ -1,6 +1,9 @@
 #include "Mesh.h"
 #include <glad/glad.h>
 
+/**
+ * @brief Construct a mesh by uploading vertex/index data to OpenGL.
+ */
 Mesh::Mesh(std::vector<Vertex> v, std::vector<unsigned> i, std::vector<std::shared_ptr<Texture>> t)
         : vertices(std::move(v)), indices(std::move(i)), textures(std::move(t)),
           VAO(0), VBO(0), EBO(0)
@@ -8,6 +11,7 @@ Mesh::Mesh(std::vector<Vertex> v, std::vector<unsigned> i, std::vector<std::shar
     setup();
 }
 
+/** @brief Destroy OpenGL buffers for this mesh. */
 Mesh::~Mesh() {
 
     if (VAO) glDeleteVertexArrays(1, &VAO);
@@ -16,6 +20,7 @@ Mesh::~Mesh() {
 
 }
 
+/** @brief Move constructor transfers buffer ownership. */
 Mesh::Mesh(Mesh&& o) noexcept
         : vertices(std::move(o.vertices)), indices(std::move(o.indices)),
           textures(std::move(o.textures)), VAO(o.VAO), VBO(o.VBO), EBO(o.EBO)
@@ -23,6 +28,7 @@ Mesh::Mesh(Mesh&& o) noexcept
     o.VAO = o.VBO = o.EBO = 0;
 }
 
+/** @brief Move assignment transfers buffer ownership. */
 Mesh& Mesh::operator=(Mesh&& o) noexcept {
     if (this != &o) {
 
@@ -40,6 +46,7 @@ Mesh& Mesh::operator=(Mesh&& o) noexcept {
     return *this;
 }
 
+/** @brief Internal helper creating VAO/VBO/EBO and attribute setup. */
 void Mesh::setup() {
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
@@ -65,6 +72,7 @@ void Mesh::setup() {
     glBindVertexArray(0);
 }
 
+/** @brief Render the mesh using currently bound shader. */
 void Mesh::Draw(const Shader& shader) const {
     unsigned int diffuseNr = 1, specularNr = 1;
     for (unsigned i = 0; i < textures.size(); ++i) {

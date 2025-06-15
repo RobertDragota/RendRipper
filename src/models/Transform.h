@@ -4,6 +4,9 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp> // For glm::toMat4, glm::eulerAngles
 
+/**
+ * @brief Interface for obtaining transformation matrices.
+ */
 class ITransform {
 public:
     virtual ~ITransform() = default;
@@ -16,12 +19,16 @@ public:
     [[nodiscard]] virtual glm::mat4 getMatrix() const = 0;
 };
 
+/**
+ * @brief Simple POD transform implementing ITransform.
+ */
 struct Transform : public ITransform {
     glm::vec3 translation{0.0f, 0.0f, 0.0f};
     glm::quat rotationQuat{1.0f, 0.0f, 0.0f, 0.0f};
     glm::vec3 scale{1.0f, 1.0f, 1.0f};
 
 
+    /** @brief Compose translation, rotation and scale into a matrix. */
     [[nodiscard]] glm::mat4 getMatrix() const override {
         glm::mat4 transMatrix = glm::translate(glm::mat4(1.0f), translation);
         glm::mat4 rotMatrix = glm::toMat4(rotationQuat);
@@ -30,10 +37,12 @@ struct Transform : public ITransform {
     }
 
 
+    /** @brief Return Euler angles from the quaternion in degrees. */
     [[nodiscard]] glm::vec3 getEulerAngles() const {
         return glm::degrees(glm::eulerAngles(rotationQuat));
     }
 
+    /** @brief Set rotation using Euler angles in degrees. */
     void setEulerAngles(const glm::vec3& eulerAnglesDegrees) {
         rotationQuat = glm::quat(glm::radians(eulerAnglesDegrees));
     }

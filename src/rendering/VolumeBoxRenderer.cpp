@@ -3,12 +3,19 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
 
+/**
+ * @file VolumeBoxRenderer.cpp
+ * @brief Renders the build volume wireframe.
+ */
+
+/** Cleanup GL buffers. */
 VolumeBoxRenderer::~VolumeBoxRenderer()
 {
     if (vao_) glDeleteVertexArrays(1, &vao_);
     if (vbo_) glDeleteBuffers(1, &vbo_);
 }
 
+/** Initialize line geometry for the specified build volume. */
 void VolumeBoxRenderer::Init(float halfX, float halfY, float height)
 {
     float hx = halfX; float hy = halfY; float hz = height;
@@ -27,6 +34,7 @@ void VolumeBoxRenderer::Init(float halfX, float halfY, float height)
                                        "../../resources/shaders/simple_line.frag");
 }
 
+/** Render the volume box. */
 void VolumeBoxRenderer::Render(const glm::mat4 &view, const glm::mat4 &proj, const glm::vec3 &color)
 {
     if (!shader_ || vao_ == 0) return;

@@ -8,6 +8,11 @@ public:
     float distance{500.f};
     glm::vec3 pivot{0.f};
 
+    /**
+     * @brief Calculate a view matrix based on current camera parameters.
+     * @param cameraWorldPos Resulting camera position in world space.
+     * @return View matrix for use with rendering APIs.
+     */
     glm::mat4 GetViewMatrix(glm::vec3 &cameraWorldPos) const {
         float rP = glm::radians(pitch);
         float rY = glm::radians(yaw);

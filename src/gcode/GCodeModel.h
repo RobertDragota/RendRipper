@@ -10,37 +10,62 @@
 #include "Shader.h"
 #include "GCodeParser.h" // for GCodeColoredVertex
 
-/// GCodeModel now groups extruding moves by “layer” (unique Z values).
-/// Each layer is one sequence of GL_LINES. You can draw a single layer or all layers up to some index.
+/**
+ * @brief Representation of a parsed G-code tool path.
+ *
+ * The model groups all extrusion moves into layers based on their Z
+ * height. Each layer can be drawn individually or up to a specific
+ * index for preview purposes.
+ */
 class GCodeModel
 {
 public:
-    /// Constructor: parse the .gcode file immediately.
+    /**
+     * @brief Parse the provided G-code file on construction.
+     * @param gcodePath Path to the .gcode file on disk.
+     */
     explicit GCodeModel(const std::string &gcodePath);
 
+    /** @brief Release all GPU resources. */
     ~GCodeModel();
 
-    /// Draw *only* layer 'layerIndex' (0-based).
-    /// Returns false if layerIndex is invalid.
+    /**
+     * @brief Draw a single layer by index.
+     * @param layerIndex Zero-based layer index to draw.
+     * @param lineShader Shader used for rendering the lines.
+     * @return False if the index is invalid.
+     */
     bool DrawLayer(int layerIndex, Shader &lineShader) const;
 
-    /// Draw all layers from 0..maxLayerIndex inclusive.
-    /// If maxLayerIndex < 0, draws all layers.
+    /**
+     * @brief Draw all layers up to the specified index.
+     * @param maxLayerIndex Inclusive maximum layer index, or negative for all.
+     * @param lineShader Shader used for rendering.
+     */
     void DrawUpToLayer(int maxLayerIndex, Shader &lineShader) const;
 
-    /// Number of layers parsed
+    /** @brief Number of parsed layers. */
     int GetLayerCount() const { return static_cast<int>(layerVertexCounts_.size()); }
 
-    /// Returns the Z-height (in mm) of each layer index.
-    /// That is, layerZs_[i] = the Z coordinate that was first encountered for layer i.
+    /**
+     * @brief Z height for every parsed layer.
+     * @return Array of layer heights.
+     */
     const std::vector<float> &GetLayerHeights() const { return layerZs_; }
 
-    /// Accessors for overall bounds and center
+    /** @brief Minimum world bounds of the tool path. */
     const glm::vec3 &GetBoundsMin() const { return boundsMin_; }
+    /** @brief Maximum world bounds of the tool path. */
     const glm::vec3 &GetBoundsMax() const { return boundsMax_; }
+    /** @brief Center of all parsed vertices. */
     const glm::vec3 &GetCenter() const { return center_; }
 
 private:
+    /**
+     * @brief Recalculate center, radius and bounds across all layers.
+     *
+     * Called once after parsing to compute the model's overall extents.
+     */
     void computeBounds();
 
     static constexpr glm::vec3 kModelColor = glm::vec3(0.8f, 0.8f, 0.8f);
