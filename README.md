@@ -1,6 +1,6 @@
-# RendRipper
+# SlicerSR
 
-RendRipper este o aplicație C++20 pentru vizualizarea, secționarea și previzualizarea modelelor 3D. Integrează un motor de randare personalizat folosind OpenGL, o interfață bazată pe ImGui și unelte utile pentru generarea și tăierea modelelor.
+SlicerSR este o aplicație C++20 pentru vizualizarea, secționarea și previzualizarea modelelor 3D. Integrează un motor de randare personalizat folosind OpenGL, o interfață bazată pe ImGui și unelte utile pentru generarea și tăierea modelelor.
 
 ## Caracteristici
 
@@ -17,7 +17,7 @@ Acest proiect folosește CMake. Clonează depozitul împreună cu submodulele sa
 
 ```bash
 git clone --recurse-submodules <repo-url>
-cd RendRipper
+cd SlicerSR
 mkdir build && cd build
 cmake ..
 cmake --build .
@@ -25,11 +25,11 @@ cmake --build .
 
 Compilarea necesită pachete externe precum **assimp**, **nlohmann_json**, **curl** și un mediu de dezvoltare OpenGL. Pe Windows, căile către `CuraEngine.exe` și interpretul Python pentru TripoSR se definesc în `CMakeLists.txt` prin definiții de compilare.
 
-**Notă:** depozitul nu conține copii locale ale [CuraEngine](https://github.com/Ultimaker/CuraEngine) și [TripoSR](https://github.com/VAST-AI-Research/TripoSR). Aceste proiecte trebuie descărcate separat pentru a permite funcțiile de tăiere și generare a modelelor.
+**Notă:** repository-ul nu conține copii locale ale [CuraEngine](https://github.com/Ultimaker/CuraEngine) și [TripoSR](https://github.com/VAST-AI-Research/TripoSR). Aceste proiecte trebuie descărcate separat pentru a permite funcțiile de slicing și generare a modelelor.
 
 ## Rulare
 
-După compilare, rulează executabilul `RendRipper`. Fereastra principală conține un viewport pentru randarea modelelor și meniuri pentru încărcarea modelelor, generarea mesh-urilor din imagini și pornirea procesului de tăiere.
+După compilare, rulează executabilul `SlicerSR`. Fereastra principală conține un viewport pentru randarea modelelor și meniuri pentru încărcarea modelelor, generarea mesh-urilor din imagini și pornirea procesului de tăiere.
 
 Când tăierea s-a încheiat, G-code-ul generat poate fi previzualizat selectând stratul de afișat. Renderer-ul rulează până când fereastra este închisă de utilizator.
 
@@ -43,4 +43,4 @@ Când tăierea s-a încheiat, G-code-ul generat poate fi previzualizat selectân
 
 ## Licență
 
-Acest depozit nu conține momentan un fișier de licență la nivelul rădăcină. Consultați README-urile din subdirectoare pentru licențele codului terț inclus.
+Acest repository nu conține momentan un fișier de licență la nivelul rădăcină. Consultați README-urile din subdirectoare pentru licențele codului terț inclus.
