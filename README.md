@@ -1,27 +1,19 @@
 # RendRipper
 
-RendRipper is a C++20 application for viewing, slicing and previewing 3D models.
-It integrates a custom renderer with OpenGL, ImGui based user interface and
-utility tools to generate and slice models.
+RendRipper este o aplicație C++20 pentru vizualizarea, secționarea și previzualizarea modelelor 3D. Integrează un motor de randare personalizat folosind OpenGL, o interfață bazată pe ImGui și unelte utile pentru generarea și tăierea modelelor.
 
-## Features
+## Caracteristici
 
-- Load `.obj` or `.stl` files and manipulate them with translation, rotation and
-  scaling gizmos.
-- Generate a mesh from a single image through the bundled
-  [TripoSR](3DModelGenerator/TripoSR) pipeline.
-- Slice models using `CuraEngine` with the provided BambuLab printer profiles and
-  visualize the resulting G-code layer by layer.
-- Preview G-code lines in real time using OpenGL.
+- Încarcă fișiere `.obj` sau `.stl` și manipulează-le cu gizmo-uri de translație, rotație și scalare.
+- Generează un mesh dintr-o singură imagine prin pipeline-ul [TripoSR](https://github.com/VAST-AI-Research/TripoSR) (neinclus în configurația actuală).
+- Taie modelele folosind `CuraEngine` (neinclusă) împreună cu profilele pentru imprimante BambuLab și vizualizează G-code-ul rezultat strat cu strat.
+- Previzualizează liniile de G-code în timp real cu OpenGL.
 
-The UI manager exposes helpers for these tasks, including model generation,
-slicing and interaction with the viewport.
-G-code files are parsed into colored line segments so each layer can be drawn
-individually.
+Managerul UI oferă ajutoare pentru aceste sarcini, inclusiv generarea modelului, procesul de tăiere și interacțiunea cu viewport-ul. Fișierele G-code sunt transformate în segmente de linii colorate pentru ca fiecare strat să poată fi desenat individual.
 
-## Building
+## Compilare
 
-This project uses CMake. Clone the repository with its submodules:
+Acest proiect folosește CMake. Clonează depozitul împreună cu submodulele sale:
 
 ```bash
 git clone --recurse-submodules <repo-url>
@@ -31,29 +23,24 @@ cmake ..
 cmake --build .
 ```
 
-The build expects external packages such as **assimp**, **nlohmann_json**,
-**curl** and an OpenGL development environment. On Windows the paths to
-`CuraEngine.exe` and the Python interpreter for TripoSR are defined in
-`CMakeLists.txt` via compile definitions.
+Compilarea necesită pachete externe precum **assimp**, **nlohmann_json**, **curl** și un mediu de dezvoltare OpenGL. Pe Windows, căile către `CuraEngine.exe` și interpretul Python pentru TripoSR se definesc în `CMakeLists.txt` prin definiții de compilare.
 
-## Running
+**Notă:** depozitul nu conține copii locale ale [CuraEngine](https://github.com/Ultimaker/CuraEngine) și [TripoSR](https://github.com/VAST-AI-Research/TripoSR). Aceste proiecte trebuie descărcate separat pentru a permite funcțiile de tăiere și generare a modelelor.
 
-After building, launch the `RendRipper` executable. The main window hosts a
-viewport for model rendering and menus for loading models, generating meshes from
-images and starting the slicing process.
+## Rulare
 
-When slicing completes, the generated G-code can be previewed by selecting the
-layer to display. The renderer runs until the window is closed by the user.
+După compilare, rulează executabilul `RendRipper`. Fereastra principală conține un viewport pentru randarea modelelor și meniuri pentru încărcarea modelelor, generarea mesh-urilor din imagini și pornirea procesului de tăiere.
 
-## Directory Overview
+Când tăierea s-a încheiat, G-code-ul generat poate fi previzualizat selectând stratul de afișat. Renderer-ul rulează până când fereastra este închisă de utilizator.
 
-- `src/` – C++ source files for the renderer, UI and utilities.
-- `resources/` – shaders, printer definitions and example G-code.
-- `3DModelGenerator/TripoSR/` – Python code for image to 3D model conversion.
-- `Slicer/` – folder intended for a `CuraEngine` build.
-- `external/` – third-party dependencies pulled as git submodules.
+## Structura directoarelor
 
-## License
+- `src/` – fișiere sursă C++ pentru renderer, UI și utilitare.
+- `resources/` – shader-e, definiții de imprimante și exemple de G-code.
+- `3DModelGenerator/TripoSR/` – cod Python pentru conversia imaginilor în modele 3D (nu este inclus implicit).
+- `Slicer/` – folder destinat unui build `CuraEngine` (neinclus).
+- `external/` – dependențe third-party aduse ca submodule git.
 
-This repository currently does not ship a top-level license file. Consult
-subdirectory READMEs for the respective licenses of included third-party code.
+## Licență
+
+Acest depozit nu conține momentan un fișier de licență la nivelul rădăcină. Consultați README-urile din subdirectoare pentru licențele codului terț inclus.
