@@ -1,5 +1,16 @@
 #include "GCodeUploader.h"
 
+/**
+ * @file GCodeUploader.cpp
+ * @brief Implementation of GCodeUploader.
+ */
+
+/**
+ * @brief Upload vertex data for each layer to GPU buffers.
+ * @param layers Layered colored vertices to upload.
+ * @param vaos Array receiving generated VAO handles.
+ * @param vbos Array receiving generated VBO handles.
+ */
 void GCodeUploader::Upload
 (
     const std::vector<std::vector<GCodeColoredVertex> > &layers,

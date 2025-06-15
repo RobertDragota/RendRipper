@@ -8,7 +8,11 @@
 #include <algorithm>
 #include <iostream>
 
-Model::Model( std::string& path) {
+/**
+ * @brief Construct a Model by loading meshes from disk.
+ * @param path Path to the model file on disk.
+ */
+Model::Model(std::string& path) {
     directory = path.substr(0, path.find_last_of("/\\"));
 
     std::cout<< "Loading model from: " << path << std::endl;
@@ -21,14 +25,17 @@ Model::Model( std::string& path) {
 }
 
 
+/** @brief Default destructor. */
 Model::~Model() = default;
 
 
+/** @brief Move constructor. */
 Model::Model(Model&& o) noexcept
         : directory(std::move(o.directory)), meshes(std::move(o.meshes)),
           center(o.center), radius(o.radius)
 {}
 
+/** @brief Move assignment operator. */
 Model& Model::operator=(Model&& o) noexcept {
     if (this != &o) {
         directory = std::move(o.directory);
@@ -39,6 +46,9 @@ Model& Model::operator=(Model&& o) noexcept {
     return *this;
 }
 
+/**
+ * @brief Draw the model using the provided shader.
+ */
 void Model::Draw(const Shader& shader) const {
     for (auto& m : meshes)
         m.Draw(shader);
@@ -48,6 +58,7 @@ void Model::Draw(const Shader& shader) const {
 
 
 
+/** @brief Compute bounding box and radius from all mesh vertices. */
 void Model::computeBounds() {
     glm::vec3 mn( FLT_MAX), mx(-FLT_MAX);
     for (auto& mesh : meshes)
@@ -64,6 +75,7 @@ void Model::computeBounds() {
 }
 
 
+/** @brief Heuristically determine the up axis for the model. */
 Axis Model::determineUpAxis() const {
     // Bounding box analysis
     glm::vec3 extents = maxBounds - minBounds;
@@ -156,6 +168,7 @@ Axis Model::determineUpAxis() const {
     return static_cast<Axis>(maxAxis);
 }
 
+/** @brief Gather all vertex positions into a single vector. */
 std::vector<glm::vec3> Model::getAllPositions() const {
     std::vector<glm::vec3> out;
     // Reserve approximate total size for performance
@@ -174,6 +187,7 @@ std::vector<glm::vec3> Model::getAllPositions() const {
     return out;
 }
 
+/** @brief Compute an approximate mass center of the model. */
 glm::vec3 Model::computeMassCenter() const {
     glm::vec3 sum(0.0f);
     size_t count = 0;

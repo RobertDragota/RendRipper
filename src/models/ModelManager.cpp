@@ -13,6 +13,9 @@
 #include "MeshRepairer.h"
 #include "ShaderCache.h"
 
+/**
+ * @brief Load a model from an STL file and create default shader/transform.
+ */
 int ModelManager::LoadModel(const std::string &modelPath) {
     std::string directory = modelPath.substr(0, modelPath.find_last_of("/\\"));
     std::string output = directory + "/output.stl";
@@ -62,6 +65,7 @@ int ModelManager::LoadModel(const std::string &modelPath) {
     return idx;
 }
 
+/** @brief Remove model and associated resources from the manager. */
 void ModelManager::UnloadModel(int index) {
     if (index < 0 || index >= static_cast<int>(models_.size())) return;
     models_.erase(models_.begin() + index);
@@ -71,6 +75,9 @@ void ModelManager::UnloadModel(int index) {
     modelPaths_.erase(modelPaths_.begin() + index);
 }
 
+/**
+ * @brief Ensure a model sits on the ground plane after transformations.
+ */
 void ModelManager::EnforceGridConstraint(int index) {
     if (index < 0 || index >= static_cast<int>(models_.size())) return;
     Model &model = *models_[index];
@@ -98,6 +105,7 @@ void ModelManager::EnforceGridConstraint(int index) {
     }
 }
 
+/** @brief Update cached dimensions after a transform change. */
 void ModelManager::UpdateDimensions(int index) {
     if (index < 0 || index >= static_cast<int>(models_.size())) return;
     glm::vec3 base = models_[index]->maxBounds - models_[index]->minBounds;
@@ -106,6 +114,9 @@ void ModelManager::UpdateDimensions(int index) {
 }
 
 
+/**
+ * @brief Export the model with its current transform applied into a new file.
+ */
 void ModelManager::ExportTransformedModel(int index, const std::string &outPath) const {
 
     if (index < 0 || index >= static_cast<int>(models_.size())) return;

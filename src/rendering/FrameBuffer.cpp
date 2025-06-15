@@ -1,6 +1,12 @@
 #include "FrameBuffer.h"
 #include <iostream>
 
+/**
+ * @file FrameBuffer.cpp
+ * @brief Implements a simple multisampled framebuffer wrapper.
+ */
+
+/** @brief Release all allocated GL objects. */
 FrameBuffer::~FrameBuffer()
 {
     if (msFbo_) glDeleteFramebuffers(1, &msFbo_);
@@ -11,6 +17,7 @@ FrameBuffer::~FrameBuffer()
     if (depthStencilRBO_) glDeleteRenderbuffers(1, &depthStencilRBO_);
 }
 
+/** Initialize the framebuffer attachments. */
 void FrameBuffer::Init(int width, int height, int samples)
 {
     samples_ = samples;
@@ -28,6 +35,7 @@ void FrameBuffer::Init(int width, int height, int samples)
     Resize(width, height);
 }
 
+/** Resize all framebuffer textures/buffers. */
 void FrameBuffer::Resize(int width, int height)
 {
     width_ = width;
@@ -67,11 +75,13 @@ void FrameBuffer::Resize(int width, int height)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+/** Bind the multisample buffer for rendering. */
 void FrameBuffer::Bind()
 {
     glBindFramebuffer(GL_FRAMEBUFFER, msFbo_ ? msFbo_ : fbo_);
 }
 
+/** Resolve multisample data and unbind. */
 void FrameBuffer::Unbind()
 {
     if (msFbo_) {

@@ -3,8 +3,14 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+/**
+ * @file TextureCache.cpp
+ * @brief Implements the texture cache utilities.
+ */
+
 std::unordered_map<std::string, std::weak_ptr<Texture>> TextureCache::cache_;
 
+/** Load or retrieve a texture from disk. */
 std::shared_ptr<Texture> TextureCache::Get(const std::string& path, const std::string& type){
     auto it = cache_.find(path);
     if(it != cache_.end()){
@@ -32,6 +38,7 @@ std::shared_ptr<Texture> TextureCache::Get(const std::string& path, const std::s
     return tex;
 }
 
+/** Obtain a 1x1 texture of the specified color. */
 std::shared_ptr<Texture> TextureCache::GetSolidColorTexture(unsigned char r,
                                                              unsigned char g,
                                                              unsigned char b,
@@ -60,6 +67,7 @@ std::shared_ptr<Texture> TextureCache::GetSolidColorTexture(unsigned char r,
     return tex;
 }
 
+/** Empty the cache, releasing textures. */
 void TextureCache::Clear(){
     cache_.clear();
 }

@@ -5,6 +5,11 @@
 #include <assimp/postprocess.h>
 #include <stdexcept>
 
+/**
+ * @brief Load meshes from the specified file path.
+ *
+ * Uses Assimp to read the file and convert each mesh into our Mesh type.
+ */
 std::vector<Mesh> ModelLoader::Load(const std::string& path) const
 {
     std::vector<Mesh> meshes;
@@ -18,6 +23,9 @@ std::vector<Mesh> ModelLoader::Load(const std::string& path) const
     return meshes;
 }
 
+/**
+ * @brief Recursively process Assimp scene nodes.
+ */
 void ModelLoader::processNode(aiNode* node, const aiScene* scene, const std::string& directory, std::vector<Mesh>& meshes) const
 {
     for (unsigned i = 0; i < node->mNumMeshes; ++i) {
@@ -28,6 +36,9 @@ void ModelLoader::processNode(aiNode* node, const aiScene* scene, const std::str
         processNode(node->mChildren[i], scene, directory, meshes);
 }
 
+/**
+ * @brief Convert an Assimp mesh into our Mesh representation.
+ */
 Mesh ModelLoader::processMesh(aiMesh* mesh, const aiScene* scene, const std::string& directory) const
 {
     std::vector<Vertex> vertices;

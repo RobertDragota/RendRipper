@@ -3,3 +3,8 @@
 //
 
 #include "MeshRepairer.h"
+
+/**
+ * @file MeshRepairer.cpp
+ * @brief Implementation placeholder for MeshRepairer helpers.
+ */

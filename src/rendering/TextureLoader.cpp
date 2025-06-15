@@ -3,6 +3,12 @@
 #include <glad/glad.h>
 #include <memory>
 
+/**
+ * @file TextureLoader.cpp
+ * @brief Functions for loading textures via Assimp.
+ */
+
+/** Load material textures of a specific type. */
 std::vector<std::shared_ptr<Texture>> TextureLoader::LoadMaterialTextures(aiMaterial* mat,
                                                          aiTextureType type,
                                                          const std::string& typeName,

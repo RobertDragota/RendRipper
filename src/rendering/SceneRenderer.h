@@ -15,16 +15,25 @@ class Shader;
 class Model;
 struct Transform;
 
+/**
+ * @brief High level renderer handling models, grid and helpers.
+ */
 class SceneRenderer {
 public:
     explicit SceneRenderer(const std::string &printerDefJsonPath );
     ~SceneRenderer();
 
+    /** Prepare the frame for drawing. */
     void BeginScene(const glm::mat4 &viewMatrix, const glm::vec3 &cameraWorldPosition);
+    /** Finish rendering. */
     void EndScene();
+    /** Render a regular 3D model. */
     void RenderModel(const Model &model, Shader &shader, const Transform &transform);
+    /** Render a single G-code layer. */
     void RenderGCodeLayer(int layerIndex);
+    /** Render all layers up to the specified one. */
     void RenderGCodeUpToLayer(int maxLayerIndex);
+    /** Resize the internal framebuffer. */
     void SetViewportSize(int width, int height);
 
     GLuint GetSceneTexture() const { return framebuffer_.GetColorTexture(); }
@@ -41,11 +50,17 @@ public:
     int currentGCodeLayerIndex_ = -1;
 
 private:
+    /** Load a fallback white texture. */
     void InitializeDefaultTexture();
+    /** Create grid renderer resources. */
     void InitializeGrid();
+    /** Setup the printer volume wireframe. */
     void InitializeVolumeBox();
+    /** Setup the small axis widget. */
     void InitializeAxes();
+    /** Render grid and volume helpers. */
     void RenderGridAndVolume();
+    /** Draw the axis widget. */
     void RenderAxes();
 
     FrameBuffer framebuffer_;

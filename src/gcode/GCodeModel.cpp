@@ -1,14 +1,25 @@
 // GCodeModel.cpp
 #include "GCodeModel.h"
+#include "GCodeParser.h"
+#include "GCodeUploader.h"
 #include <iostream>
 #include <glm/gtc/type_ptr.hpp>
 #include <glad/glad.h>
 #include <cfloat>   // for FLT_MAX
 #include <algorithm>
 #include <cmath>
-#include "GCodeParser.h"
-#include "GCodeUploader.h"
 
+/**
+ * @file GCodeModel.cpp
+ * @brief Implementation of the GCodeModel class.
+ */
+
+/**
+ * @brief Construct a GCodeModel from a file.
+ *
+ * The constructor parses the given G-code and uploads vertex data
+ * to the GPU for each detected layer.
+ */
 GCodeModel::GCodeModel(const std::string &gcodePath)
 {
     GCodeParser parser;
@@ -33,6 +44,9 @@ GCodeModel::GCodeModel(const std::string &gcodePath)
         }
 }
 
+/**
+ * @brief Destroy the model and free OpenGL resources.
+ */
 GCodeModel::~GCodeModel()
 {
     // Delete all VAOs and VBOs
@@ -48,6 +62,9 @@ GCodeModel::~GCodeModel()
         }
 }
 
+/**
+ * @brief Calculate overall bounds from all layers.
+ */
 void GCodeModel::computeBounds()
 {
     // Compute center_ and radius_ over all layers
@@ -72,7 +89,12 @@ void GCodeModel::computeBounds()
     radius_ = glm::length(mx - center_) * 0.5f;
 }
 
-// Draw a single layer index. Returns false if invalid index or not ready.
+/**
+ * @brief Render a single layer of the tool path.
+ * @param layerIndex Index of the layer to draw.
+ * @param lineShader Shader used for rendering the lines.
+ * @return False if the layer is invalid or the model is not ready.
+ */
 bool GCodeModel::DrawLayer(int layerIndex, Shader &lineShader) const
 {
     if (!ready_)
@@ -99,7 +121,11 @@ bool GCodeModel::DrawLayer(int layerIndex, Shader &lineShader) const
     return true;
 }
 
-// Draw layers 0..maxLayerIndex inclusive. If maxLayerIndex < 0, draw all layers.
+/**
+ * @brief Draw layers from 0 up to the specified index.
+ * @param maxLayerIndex Inclusive max layer index, or negative for all.
+ * @param lineShader Shader used for drawing.
+ */
 void GCodeModel::DrawUpToLayer(int maxLayerIndex, Shader &lineShader) const
 {
     if (!ready_)

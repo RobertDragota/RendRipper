@@ -2,6 +2,12 @@
 #include "Shader.h"
 #include <glm/gtc/matrix_transform.hpp>
 
+/**
+ * @file GridRenderer.cpp
+ * @brief Implements the GridRenderer class.
+ */
+
+/** @brief Free OpenGL buffers. */
 GridRenderer::~GridRenderer()
 {
     if (vao_) glDeleteVertexArrays(1, &vao_);
@@ -9,6 +15,7 @@ GridRenderer::~GridRenderer()
     if (ebo_) glDeleteBuffers(1, &ebo_);
 }
 
+/** Create grid geometry covering the specified extents. */
 void GridRenderer::Init(float halfX, float halfY)
 {
     float hx = halfX;
@@ -30,6 +37,9 @@ void GridRenderer::Init(float halfX, float halfY)
                                       "../../resources/shaders/infinite_grid.frag");
 }
 
+/**
+ * @brief Render the grid using the given shader.
+ */
 void GridRenderer::Render(const glm::mat4 &view,
                           const glm::mat4 &proj,
                           const glm::vec3 &lineColor)

@@ -3,6 +3,9 @@
 #include <string>
 #include <glad/glad.h>
 
+/**
+ * @brief Represents a compiled OpenGL shader stage.
+ */
 class ShaderModule {
 public:
     ShaderModule() = default;
@@ -16,6 +19,7 @@ public:
     ShaderModule(const ShaderModule &) = delete;
     ShaderModule &operator=(const ShaderModule &) = delete;
 
+    /// Access the underlying shader object id.
     GLuint id() const { return id_; }
 
 private:

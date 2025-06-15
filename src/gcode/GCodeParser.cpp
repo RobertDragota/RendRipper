@@ -6,6 +6,17 @@
 #include <cmath>
 #include <stdexcept>
 
+/**
+ * @file GCodeParser.cpp
+ * @brief Implementation of the GCodeParser utility.
+ */
+
+/**
+ * @brief Parse a G-code file into per-layer colored vertices.
+ * @param path Path to the source file.
+ * @param layers Output container receiving vertices for each layer.
+ * @param layerZs Output array of Z heights for each layer.
+ */
 void GCodeParser::Parse
 (
     const std::string &path,
