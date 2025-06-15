@@ -54,7 +54,13 @@ namespace
     }
 }
 
-/** Present a file open dialog and return the selected path. */
+/**
+ * Opens a file dialog allowing the user to select a file from the filesystem.
+ *
+ * @param title The title to display on the file dialog window.
+ * @param filter The file type filter to apply when displaying selectable files.
+ * @param initialDirectory The directory to display when the dialog opens.
+ */
 void UIManager::openFileDialog(const std::function<void(std::string &)> &onFileSelected)
 {
 #ifdef _WIN32
@@ -425,6 +431,20 @@ void UIManager::openRenderScene()
     ImGui::End();
 }
 
+/**
+ * Displays a dialog containing the properties and settings of the currently selected 3D model.
+ * This includes the model's dimensions, transformation settings (translation, rotation, scale),
+ * and slicing settings. The user can modify these properties interactively.
+ *
+ * If no model is selected, an indication is shown to the user.
+ *
+ * The dialog also provides options to:
+ * - Reset the transformation of the current model to its default state.
+ * - Unload the currently selected model from the application.
+ *
+ * Changes made to the model settings or transformations are automatically applied to ensure constraints
+ * (like grid alignment or dimension updates) are respected.
+ */
 void UIManager::openModelPropertiesDialog()
 {
     ImGui::Begin("Model Properties");
@@ -733,6 +753,13 @@ void UIManager::getActiveModel(glm::mat4 &viewMatrix, const ImVec2 &viewportScre
     activeModel_ = pick;
 }
 
+/**
+ * Render a collection of 3D models onto the screen.
+ *
+ * @param modelList A list of models to be rendered.
+ * @param camera The camera used to view the models.
+ * @param lightingSettings Settings for lighting effects to be applied during rendering.
+ */
 void UIManager::renderModels(glm::mat4 &)
 {
     for (size_t i = 0; i < modelManager_.Count(); ++i)
@@ -747,7 +774,10 @@ void UIManager::renderModels(glm::mat4 &)
         }
 }
 
-/** Load generated G-code and remove temporary files. */
+/**
+ Finalize the slicing operation by completing any pending processing,
+ cleaning up resources, and preparing the data for final output or usage.
+ */
 void UIManager::finalizeSlicing()
 {
     try
@@ -857,6 +887,7 @@ void UIManager::saveModelSettings()
         }
 }
 
+/** Process and handle user input specific to the viewport. */
 void UIManager::handleViewportInput
 (
     glm::mat4 &viewMatrix,
