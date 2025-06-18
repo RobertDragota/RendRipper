@@ -42,7 +42,8 @@ void GridRenderer::Init(float halfX, float halfY)
  */
 void GridRenderer::Render(const glm::mat4 &view,
                           const glm::mat4 &proj,
-                          const glm::vec3 &lineColor)
+                          const glm::vec3 &lineColor,
+                          const glm::vec3 &offset)
 {
     if (!shader_ || vao_ == 0) return;
     glEnable(GL_BLEND);
@@ -51,7 +52,8 @@ void GridRenderer::Render(const glm::mat4 &view,
     shader_->use();
     shader_->setMat4("view", view);
     shader_->setMat4("projection", proj);
-    shader_->setMat4("model", glm::mat4(1.0f));
+    glm::mat4 modelMat = glm::translate(glm::mat4(1.0f), offset);
+    shader_->setMat4("model", modelMat);
     if (shader_->hasUniform("gridSpacing"))
         shader_->setFloat("gridSpacing", 5.0f);
     if (shader_->hasUniform("lineWidthFactor"))
