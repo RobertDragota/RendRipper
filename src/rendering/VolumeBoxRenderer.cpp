@@ -35,13 +35,17 @@ void VolumeBoxRenderer::Init(float halfX, float halfY, float height)
 }
 
 /** Render the volume box. */
-void VolumeBoxRenderer::Render(const glm::mat4 &view, const glm::mat4 &proj, const glm::vec3 &color)
+void VolumeBoxRenderer::Render(const glm::mat4 &view,
+                               const glm::mat4 &proj,
+                               const glm::vec3 &color,
+                               const glm::vec3 &offset)
 {
     if (!shader_ || vao_ == 0) return;
     shader_->use();
     shader_->setMat4("view", view);
     shader_->setMat4("projection", proj);
-    shader_->setMat4("model", glm::mat4(1.0f));
+    glm::mat4 modelMat = glm::translate(glm::mat4(1.0f), offset);
+    shader_->setMat4("model", modelMat);
     if (shader_->hasUniform("lineColor")) shader_->setVec3("lineColor", color);
     glBindVertexArray(vao_);
     glLineWidth(lineWidth_);

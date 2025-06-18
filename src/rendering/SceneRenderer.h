@@ -44,6 +44,7 @@ public:
     float GetBedHalfWidth() const { return volumeHalfX_; }
     float GetBedHalfDepth() const { return volumeHalfY_; }
     float GetPrintHeight() const { return volumeHeight_; }
+    const glm::vec3 &GetPlatformOffset() const { return platformOffset_; }
 
     void SetGCodeModel(std::shared_ptr<GCodeModel> gcodeModel) { gcodeModel_ = gcodeModel; }
     void SetGCodeOffset(const glm::vec3& offset) { gcodeOffset_ = offset; }
@@ -77,6 +78,8 @@ private:
     float volumeHalfX_;
     float volumeHalfY_;
     float volumeHeight_;
+
+    glm::vec3 platformOffset_ = glm::vec3(0.0f);
 
     std::shared_ptr<GCodeModel> gcodeModel_;
     std::unique_ptr<Shader> gcodeShader_;

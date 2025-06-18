@@ -29,6 +29,15 @@ SceneRenderer::SceneRenderer(const std::string &printerDefJsonPath)
                 volumeHalfX_ = w * 0.5f;
                 volumeHalfY_ = d * 0.5f;
                 volumeHeight_ = h;
+                if (j.contains("metadata") && j["metadata"].contains("platform_offset")) {
+                    auto arr = j["metadata"]["platform_offset"];
+                    if (arr.is_array() && arr.size() >= 2) {
+                        platformOffset_.x = static_cast<float>(arr[0].get<double>());
+                        platformOffset_.y = static_cast<float>(arr[1].get<double>());
+                        if (arr.size() >= 3)
+                            platformOffset_.z = static_cast<float>(arr[2].get<double>());
+                    }
+                }
             } catch (const std::exception &e) {
                 std::cerr << "Warning: JSON parse error in SceneRenderer constructor: "
                           << e.what() << "\nFalling back to defaults.\n";
@@ -137,15 +146,18 @@ void SceneRenderer::RenderModel(const Model &model, Shader &shader, const Transf
 /** Draw the ground grid and build volume. */
 void SceneRenderer::RenderGridAndVolume()
 {
-    gridRenderer_.Render(viewMatrix_, projectionMatrix_, gridColor_);
-    volumeBoxRenderer_.Render(viewMatrix_, projectionMatrix_, gridColor_);
+    gridRenderer_.Render(viewMatrix_, projectionMatrix_, gridColor_, platformOffset_);
+    volumeBoxRenderer_.Render(viewMatrix_, projectionMatrix_, gridColor_, platformOffset_);
     RenderAxes();
 }
 
 /** Draw the small axis widget. */
 void SceneRenderer::RenderAxes()
 {
-    axesRenderer_.Render(viewMatrix_, projectionMatrix_, glm::vec3(-volumeHalfX_, -volumeHalfY_, 0.f));
+    axesRenderer_.Render(viewMatrix_, projectionMatrix_,
+                         glm::vec3(-volumeHalfX_ + platformOffset_.x,
+                                   -volumeHalfY_ + platformOffset_.y,
+                                   0.f));
 }
 
 /** Render only a specific G-code layer. */
@@ -154,7 +166,8 @@ void SceneRenderer::RenderGCodeLayer(int layerIndex)
     if (!gcodeModel_ || !gcodeShader_) return;
     gcodeShader_->use();
     glm::mat4 modelMat(1.0f);
-    modelMat = glm::translate(modelMat, glm::vec3(-volumeHalfX_, -volumeHalfY_, 0.0f) + gcodeOffset_);
+    glm::vec3 base(-volumeHalfX_, -volumeHalfY_, 0.0f);
+    modelMat = glm::translate(modelMat, base + platformOffset_ + gcodeOffset_);
     gcodeShader_->setMat4("model", modelMat);
     gcodeShader_->setMat4("view", viewMatrix_);
     gcodeShader_->setMat4("projection", projectionMatrix_);
@@ -167,7 +180,8 @@ void SceneRenderer::RenderGCodeUpToLayer(int maxLayerIndex)
     if (!gcodeModel_ || !gcodeShader_) return;
     gcodeShader_->use();
     glm::mat4 modelMat(1.0f);
-    modelMat = glm::translate(modelMat, glm::vec3(-volumeHalfX_, -volumeHalfY_, 0.0f) + gcodeOffset_);
+    glm::vec3 base(-volumeHalfX_, -volumeHalfY_, 0.0f);
+    modelMat = glm::translate(modelMat, base + platformOffset_ + gcodeOffset_);
     gcodeShader_->setMat4("model", modelMat);
     gcodeShader_->setMat4("view", viewMatrix_);
     gcodeShader_->setMat4("projection", projectionMatrix_);
