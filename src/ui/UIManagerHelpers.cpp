@@ -316,11 +316,12 @@ void UIManager::sliceActiveModel()
                     {
                     glm::vec3 localCenter = mdl->center;
                     glm::vec3 worldCenter = glm::vec3(tf->getMatrix() * glm::vec4(localCenter, 1.0f));
-                    worldCenter.x = glm::clamp(worldCenter.x, -offX, +offX);
-                    worldCenter.y = glm::clamp(worldCenter.y, -offY, +offY);
-                    std::cout << "World center: " << worldCenter.x << ", " << worldCenter.y << std::endl;
-                    double posX = offX + worldCenter.x;
-                    double posY = offY + worldCenter.y;
+                    float machineW = renderer_ ? renderer_->GetBedHalfWidth()*2.f : offX*2.f;
+                    float machineD = renderer_ ? renderer_->GetBedHalfDepth()*2.f : offY*2.f;
+                    glm::vec2 machinePos = renderer_ ? renderer_->WorldToMachine({worldCenter.x, worldCenter.y})
+                                                   : glm::vec2(worldCenter.x, worldCenter.y);
+                    double posX = glm::clamp(static_cast<double>(machinePos.x), 0.0, static_cast<double>(machineW));
+                    double posY = glm::clamp(static_cast<double>(machinePos.y), 0.0, static_cast<double>(machineD));
                     modelSettings_["overrides"]["mesh_position_x"]["value"] = posX;
                     modelSettings_["overrides"]["mesh_position_x"]["default_value"] = posX;
                     modelSettings_["overrides"]["mesh_position_y"]["value"] = posY;
@@ -461,9 +462,8 @@ void UIManager::openModelPropertiesDialog()
                 glm::vec3 localCenter = mdl->center;
                 glm::vec3 worldCenter = glm::vec3(
                     modelManager_.GetTransform(activeModel_)->getMatrix() * glm::vec4(localCenter, 1.0f));
-                float bedX = worldCenter.x + renderer_->GetBedHalfWidth();
-                float bedY = worldCenter.y + renderer_->GetBedHalfDepth();
-                ImGui::Text("Slice Reference XY (mm): %.2f, %.2f", bedX, bedY);
+                glm::vec2 machinePos = renderer_->WorldToMachine({worldCenter.x, worldCenter.y});
+                ImGui::Text("Slice Reference XY (mm): %.2f, %.2f", machinePos.x, machinePos.y);
                 }
             }
         ImGui::Separator();
@@ -794,9 +794,11 @@ void UIManager::finalizeSlicing()
                     double posX = ov["mesh_position_x"]["value"].get<double>();
                     double posY = ov["mesh_position_y"]["value"].get<double>();
                     glm::vec3 c = gm->GetCenter();
-                    offset = glm::vec3(static_cast<float>(posX - c.x),
-                                       static_cast<float>(posY - c.y),
-                                       0.f);
+                    glm::vec2 centerWorld = renderer_ ? renderer_->MachineToWorld({c.x, c.y})
+                                                    : glm::vec2(c.x, c.y);
+                    glm::vec2 desiredWorld = renderer_ ? renderer_->MachineToWorld({posX, posY})
+                                                     : glm::vec2(posX, posY);
+                    offset = glm::vec3(desiredWorld - centerWorld, 0.f);
                     }
                 }
             catch (const std::exception &e)
