@@ -29,12 +29,14 @@ SceneRenderer::SceneRenderer(const std::string &printerDefJsonPath)
                 volumeHalfX_ = w * 0.5f;
                 volumeHalfY_ = d * 0.5f;
                 volumeHeight_ = h;
+
                 if (o.contains("machine_center_is_zero")) {
                     if (o["machine_center_is_zero"].contains("value"))
                         machineCenterIsZero_ = o["machine_center_is_zero"]["value"].get<bool>();
                     else if (o["machine_center_is_zero"].contains("default_value"))
                         machineCenterIsZero_ = o["machine_center_is_zero"]["default_value"].get<bool>();
                 }
+
                 if (j.contains("metadata") && j["metadata"].contains("platform_offset")) {
                     auto arr = j["metadata"]["platform_offset"];
                     if (arr.is_array() && arr.size() >= 2) {
@@ -152,8 +154,10 @@ void SceneRenderer::RenderModel(const Model &model, Shader &shader, const Transf
 /** Draw the ground grid and build volume. */
 void SceneRenderer::RenderGridAndVolume()
 {
+
     gridRenderer_.Render(viewMatrix_, projectionMatrix_, gridColor_, glm::vec3(0.0f));
     volumeBoxRenderer_.Render(viewMatrix_, projectionMatrix_, gridColor_, glm::vec3(0.0f));
+
     RenderAxes();
 }
 
@@ -161,7 +165,9 @@ void SceneRenderer::RenderGridAndVolume()
 void SceneRenderer::RenderAxes()
 {
     axesRenderer_.Render(viewMatrix_, projectionMatrix_,
+
                          glm::vec3(-volumeHalfX_, -volumeHalfY_, 0.f));
+
 }
 
 /** Render only a specific G-code layer. */
@@ -171,7 +177,9 @@ void SceneRenderer::RenderGCodeLayer(int layerIndex)
     gcodeShader_->use();
     glm::mat4 modelMat(1.0f);
     glm::vec3 base(-volumeHalfX_, -volumeHalfY_, 0.0f);
+
     modelMat = glm::translate(modelMat, base + gcodeOffset_);
+
     gcodeShader_->setMat4("model", modelMat);
     gcodeShader_->setMat4("view", viewMatrix_);
     gcodeShader_->setMat4("projection", projectionMatrix_);
@@ -185,7 +193,9 @@ void SceneRenderer::RenderGCodeUpToLayer(int maxLayerIndex)
     gcodeShader_->use();
     glm::mat4 modelMat(1.0f);
     glm::vec3 base(-volumeHalfX_, -volumeHalfY_, 0.0f);
+
     modelMat = glm::translate(modelMat, base + gcodeOffset_);
+
     gcodeShader_->setMat4("model", modelMat);
     gcodeShader_->setMat4("view", viewMatrix_);
     gcodeShader_->setMat4("projection", projectionMatrix_);

@@ -45,10 +45,12 @@ public:
     float GetBedHalfDepth() const { return volumeHalfY_; }
     float GetPrintHeight() const { return volumeHeight_; }
     const glm::vec3 &GetPlatformOffset() const { return platformOffset_; }
+
     bool MachineCenterIsZero() const { return machineCenterIsZero_; }
 
     glm::vec2 WorldToMachine(const glm::vec2 &world) const;
     glm::vec2 MachineToWorld(const glm::vec2 &machine) const;
+
 
     void SetGCodeModel(std::shared_ptr<GCodeModel> gcodeModel) { gcodeModel_ = gcodeModel; }
     void SetGCodeOffset(const glm::vec3& offset) { gcodeOffset_ = offset; }
@@ -84,7 +86,9 @@ private:
     float volumeHeight_;
 
     glm::vec3 platformOffset_ = glm::vec3(0.0f);
+
     bool machineCenterIsZero_ = true;
+
 
     std::shared_ptr<GCodeModel> gcodeModel_;
     std::unique_ptr<Shader> gcodeShader_;
