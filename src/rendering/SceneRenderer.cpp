@@ -155,8 +155,8 @@ void SceneRenderer::RenderModel(const Model &model, Shader &shader, const Transf
 void SceneRenderer::RenderGridAndVolume()
 {
 
-    gridRenderer_.Render(viewMatrix_, projectionMatrix_, gridColor_, glm::vec3(0.0f));
-    volumeBoxRenderer_.Render(viewMatrix_, projectionMatrix_, gridColor_, glm::vec3(0.0f));
+    gridRenderer_.Render(viewMatrix_, projectionMatrix_, gridColor_, -platformOffset_);
+    volumeBoxRenderer_.Render(viewMatrix_, projectionMatrix_, gridColor_, -platformOffset_);
 
     RenderAxes();
 }
@@ -164,9 +164,10 @@ void SceneRenderer::RenderGridAndVolume()
 /** Draw the small axis widget. */
 void SceneRenderer::RenderAxes()
 {
-    axesRenderer_.Render(viewMatrix_, projectionMatrix_,
 
-                         glm::vec3(-volumeHalfX_, -volumeHalfY_, 0.f));
+    axesRenderer_.Render(viewMatrix_,
+                         projectionMatrix_,
+                         glm::vec3(-volumeHalfX_, -volumeHalfY_, 0.f) - platformOffset_);
 
 }
 
@@ -176,9 +177,9 @@ void SceneRenderer::RenderGCodeLayer(int layerIndex)
     if (!gcodeModel_ || !gcodeShader_) return;
     gcodeShader_->use();
     glm::mat4 modelMat(1.0f);
-    glm::vec3 base(-volumeHalfX_, -volumeHalfY_, 0.0f);
 
-    modelMat = glm::translate(modelMat, base + gcodeOffset_);
+    glm::vec2 base2 = MachineToWorld(glm::vec2(0.0f));
+    modelMat = glm::translate(modelMat, glm::vec3(base2, 0.0f) + gcodeOffset_);
 
     gcodeShader_->setMat4("model", modelMat);
     gcodeShader_->setMat4("view", viewMatrix_);
@@ -192,9 +193,9 @@ void SceneRenderer::RenderGCodeUpToLayer(int maxLayerIndex)
     if (!gcodeModel_ || !gcodeShader_) return;
     gcodeShader_->use();
     glm::mat4 modelMat(1.0f);
-    glm::vec3 base(-volumeHalfX_, -volumeHalfY_, 0.0f);
 
-    modelMat = glm::translate(modelMat, base + gcodeOffset_);
+    glm::vec2 base2 = MachineToWorld(glm::vec2(0.0f));
+    modelMat = glm::translate(modelMat, glm::vec3(base2, 0.0f) + gcodeOffset_);
 
     gcodeShader_->setMat4("model", modelMat);
     gcodeShader_->setMat4("view", viewMatrix_);
