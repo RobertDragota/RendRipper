@@ -346,6 +346,7 @@ void UIManager::sliceActiveModel()
         std::string cmd = std::string(CURA_ENGINE_EXE) +
                           " slice -j " + std::string(PRIMITIVE_PRINTER_SETTINGS_FILE) + " -j " +
                           std::string(BASE_PRINTER_SETTINGS_FILE) + " -j " + std::string(A1MINI_PRINTER_SETTINGS_FILE) +
+                          " -j " + std::string(A1MINI_EXTRUDER0_FILE) +
                           " -j " + std::string(MODEL_SETTINGS_FILE) +
                           " -l \"" + pendingResizedPath_ + "\"" +
                           " -o \"" + pendingGcodePath_ + "\"";

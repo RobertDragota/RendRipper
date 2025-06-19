@@ -163,6 +163,10 @@ target_compile_definitions(RendRipper PRIVATE
 		        PRIMITIVE_PRINTER_SETTINGS_FILE=\"${CMAKE_CURRENT_SOURCE_DIR}/resources/printer_settings/fdmprinter.def.json\"
 		        BASE_PRINTER_SETTINGS_FILE=\"${CMAKE_CURRENT_SOURCE_DIR}/resources/printer_settings/bambulab_base.def.json\"
                         A1MINI_PRINTER_SETTINGS_FILE=\"${CMAKE_CURRENT_SOURCE_DIR}/resources/printer_settings/bambulab_a1mini.def.json\"
+                        A1MINI_EXTRUDER0_FILE=\"${CMAKE_CURRENT_SOURCE_DIR}/resources/printer_settings/bambulab_a1mini_extruder_0.def.json\"
+                        A1MINI_EXTRUDER1_FILE=\"${CMAKE_CURRENT_SOURCE_DIR}/resources/printer_settings/bambulab_a1mini_extruder_1.def.json\"
+                        A1MINI_EXTRUDER2_FILE=\"${CMAKE_CURRENT_SOURCE_DIR}/resources/printer_settings/bambulab_a1mini_extruder_2.def.json\"
+                        A1MINI_EXTRUDER3_FILE=\"${CMAKE_CURRENT_SOURCE_DIR}/resources/printer_settings/bambulab_a1mini_extruder_3.def.json\"
                         GCODE_OUTPUT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/resources/generated_gcode\"
                 MESHLIB_AVAILABLE
 )
