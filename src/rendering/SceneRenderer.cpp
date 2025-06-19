@@ -3,6 +3,7 @@
 #include "Model.h"
 #include "Transform.h"
 #include <fstream>
+#include <filesystem>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <iostream>
@@ -12,17 +13,36 @@
  * @brief Implements the main scene rendering routines.
  */
 
+namespace {
+json LoadPrinterDefinitionRecursive(const std::filesystem::path &path)
+{
+    json j;
+    std::ifstream in(path);
+    if (in.is_open()) {
+        in >> j;
+        if (j.contains("inherits")) {
+            std::filesystem::path base = path.parent_path() /
+                (j["inherits"].get<std::string>() + ".def.json");
+            if (std::filesystem::exists(base)) {
+                json parent = LoadPrinterDefinitionRecursive(base);
+                parent.merge_patch(j);
+                return parent;
+            }
+        }
+    }
+    return j;
+}
+} // namespace
+
 /**
  * @brief Construct the renderer using printer volume settings.
  */
 SceneRenderer::SceneRenderer(const std::string &printerDefJsonPath)
 {
     if (!printerDefJsonPath.empty()) {
-        std::ifstream in(printerDefJsonPath);
-        if (in.is_open()) {
-            try {
-                json j; in >> j;
-                auto o = j.at("overrides");
+        try {
+            json j = LoadPrinterDefinitionRecursive(printerDefJsonPath);
+            auto o = j.at("overrides");
                 float w = static_cast<float>(o.at("machine_width").at("value").get<double>());
                 float d = static_cast<float>(o.at("machine_depth").at("value").get<double>());
                 float h = static_cast<float>(o.at("machine_height").at("value").get<double>());
@@ -46,13 +66,11 @@ SceneRenderer::SceneRenderer(const std::string &printerDefJsonPath)
                 // rendered by SceneRenderer matches the coordinate system used
                 // by CuraEngine we ignore any platform_offset specified in the
                 // printer definition.
-            } catch (const std::exception &e) {
-                std::cerr << "Warning: JSON parse error in SceneRenderer constructor: "
-                          << e.what() << "\nFalling back to defaults.\n";
-                volumeHalfX_ = 100.f; volumeHalfY_ = 100.f; volumeHeight_ = 200.f;
-            }
-        } else {
-            std::cerr << "Warning: Could not open printerDefJsonPath: " << printerDefJsonPath << "\n";
+
+        } catch (const std::exception &e) {
+            std::cerr << "Warning: JSON parse error in SceneRenderer constructor: "
+                      << e.what() << "\nFalling back to defaults.\n";
+
             volumeHalfX_ = 100.f; volumeHalfY_ = 100.f; volumeHeight_ = 200.f;
         }
     } else {
