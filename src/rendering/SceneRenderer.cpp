@@ -66,9 +66,11 @@ SceneRenderer::SceneRenderer(const std::string &printerDefJsonPath)
                 // rendered by SceneRenderer matches the coordinate system used
                 // by CuraEngine we ignore any platform_offset specified in the
                 // printer definition.
+
         } catch (const std::exception &e) {
             std::cerr << "Warning: JSON parse error in SceneRenderer constructor: "
                       << e.what() << "\nFalling back to defaults.\n";
+
             volumeHalfX_ = 100.f; volumeHalfY_ = 100.f; volumeHeight_ = 200.f;
         }
     } else {
