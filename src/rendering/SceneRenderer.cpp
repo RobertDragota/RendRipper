@@ -37,15 +37,15 @@ SceneRenderer::SceneRenderer(const std::string &printerDefJsonPath)
                         machineCenterIsZero_ = o["machine_center_is_zero"]["default_value"].get<bool>();
                 }
 
-                if (j.contains("metadata") && j["metadata"].contains("platform_offset")) {
-                    auto arr = j["metadata"]["platform_offset"];
-                    if (arr.is_array() && arr.size() >= 2) {
-                        platformOffset_.x = static_cast<float>(arr[0].get<double>());
-                        platformOffset_.y = static_cast<float>(arr[1].get<double>());
-                        if (arr.size() >= 3)
-                            platformOffset_.z = static_cast<float>(arr[2].get<double>());
-                    }
-                }
+                // The Cura definition may include a "platform_offset" which is
+                // used by the Cura UI to position a textured build plate model
+                // relative to the nozzle.  These offsets are not taken into
+                // account by CuraEngine when generating G-code, so applying
+                // them here would result in mismatched coordinates between the
+                // rendered preview and the sliced output.  To ensure the bed
+                // rendered by SceneRenderer matches the coordinate system used
+                // by CuraEngine we ignore any platform_offset specified in the
+                // printer definition.
             } catch (const std::exception &e) {
                 std::cerr << "Warning: JSON parse error in SceneRenderer constructor: "
                           << e.what() << "\nFalling back to defaults.\n";
