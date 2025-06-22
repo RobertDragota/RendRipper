@@ -1,0 +1,19 @@
+{
+  "overrides": {
+    "mesh_position_x": {"value": 90, "default_value": 90},
+    "mesh_position_y": {"value": 90, "default_value": 90},
+    "center_object": {"value": false, "default_value": false},
+    "material_bed_temperature": {"value": 60, "default_value": 60},
+    "material_print_temperature": {"value": 200, "default_value": 200},
+    "speed_print": {"value": 60, "default_value": 60},
+    "support_enable": {"value": false, "default_value": false},
+    "support_type": {"value": "buildplate", "default_value": "buildplate"},
+    "support_infill_rate": {"value": 15, "default_value": 15},
+    "support_structure": {"value": "normal", "default_value": "normal"},
+    "support_angle": {"value": 50, "default_value": 50},
+    "support_tree_angle": {"value": 60, "default_value": 60},
+    "support_pattern": {"value": "zigzag", "default_value": "zigzag"},
+    "infill_sparse_density": {"value": 20, "default_value": 20},
+    "infill_pattern": {"value": "grid", "default_value": "grid"}
+  }
+}

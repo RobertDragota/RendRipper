@@ -711,6 +711,8 @@ void UIManager::openModelPropertiesDialog()
             ImGui::Text("Z = %.2f mm (layer %d of %d)", layerHeights[(currentGCodeLayer_ < 0 ? 0 : currentGCodeLayer_)],
                         (currentGCodeLayer_ < 0 ? 0 : currentGCodeLayer_), layerCount - 1);
             ImGui::SliderInt("Layer", &currentGCodeLayer_, -1, layerCount - 1, currentGCodeLayer_ < 0 ? "All" : "%d");
+            ImGui::Text("Time: %.1f min", gcodeModel_->GetPrintTimeSeconds() / 60.0f);
+            ImGui::Text("Filament: %.2f m", gcodeModel_->GetFilamentUsedMeters());
             }
         else
             {
