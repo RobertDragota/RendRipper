@@ -23,7 +23,10 @@
 GCodeModel::GCodeModel(const std::string &gcodePath)
 {
     GCodeParser parser;
-    parser.Parse(gcodePath, layers_, layerZs_);
+    GCodeMeta meta;
+    parser.Parse(gcodePath, layers_, layerZs_, &meta);
+    filamentUsedMeters_ = meta.filament_used_m;
+    printTimeSeconds_ = meta.print_time_seconds;
     if (!layers_.empty())
         {
         computeBounds();

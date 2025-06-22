@@ -60,6 +60,12 @@ public:
     /** @brief Center of all parsed vertices. */
     const glm::vec3 &GetCenter() const { return center_; }
 
+    /** @brief Filament used in meters. */
+    double GetFilamentUsedMeters() const { return filamentUsedMeters_; }
+
+    /** @brief Estimated print time in seconds. */
+    int GetPrintTimeSeconds() const { return printTimeSeconds_; }
+
 private:
     /**
      * @brief Recalculate center, radius and bounds across all layers.
@@ -92,6 +98,9 @@ private:
     std::vector<unsigned int> layerVBOs_;
 
     bool ready_{false};
+
+    double filamentUsedMeters_ = 0.0;
+    int printTimeSeconds_ = 0;
 
     // We do *not* keep one big “lineVertices_” vector anymore; it's now split per layer.
     // Temporary storage is used only during parsing.

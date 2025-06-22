@@ -21,13 +21,20 @@ void GCodeParser::Parse
 (
     const std::string &path,
     std::vector<std::vector<GCodeColoredVertex> > &layers,
-    std::vector<float> &layerZs
+    std::vector<float> &layerZs,
+    GCodeMeta *meta
 ) const
 {
     std::ifstream in(path);
     if (!in.is_open())
         {
         throw std::runtime_error("Failed to open G-code file: " + path);
+        }
+
+    if (meta)
+        {
+        meta->print_time_seconds = 0;
+        meta->filament_used_m = 0.0;
         }
 
     std::string line;
@@ -50,6 +57,20 @@ void GCodeParser::Parse
         if (semiPos != std::string::npos)
             {
             comment = line.substr(semiPos + 1);
+            }
+
+        if (meta && !comment.empty())
+            {
+            if (comment.rfind("TIME:", 0) == 0)
+                {
+                try { meta->print_time_seconds = std::stoi(comment.substr(5)); } catch (...) {}
+                }
+            else if (comment.rfind("Filament used:", 0) == 0)
+                {
+                std::string v = comment.substr(14);
+                if (!v.empty() && v.back() == 'm') v.pop_back();
+                try { meta->filament_used_m = std::stod(v); } catch (...) {}
+                }
             }
 
         std::smatch m;
