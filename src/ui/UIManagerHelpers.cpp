@@ -674,13 +674,29 @@ void UIManager::openModelPropertiesDialog()
                             }
                         else
                             {
-                            char buf[128];
-                            strncpy(buf, s.c_str(), sizeof(buf));
-                            buf[sizeof(buf) - 1] = '\0';
-                            if (ImGui::InputText("##v", buf, sizeof(buf)))
+                            bool multi = (key.find("gcode") != std::string::npos) || s.find('\n') != std::string::npos || s.size() > 120;
+                            if (multi)
                                 {
-                                s = buf;
-                                msChanged = true;
+                                static std::vector<char> buf(16384);
+                                if (s.size() + 1 > buf.size())
+                                    buf.resize(s.size() + 1);
+                                std::strncpy(buf.data(), s.c_str(), buf.size());
+                                if (ImGui::InputTextMultiline("##v", buf.data(), buf.size(), ImVec2(-FLT_MIN, 100), ImGuiInputTextFlags_AllowTabInput))
+                                    {
+                                    s = buf.data();
+                                    msChanged = true;
+                                    }
+                                }
+                            else
+                                {
+                                char buf[256];
+                                strncpy(buf, s.c_str(), sizeof(buf));
+                                buf[sizeof(buf) - 1] = '\0';
+                                if (ImGui::InputText("##v", buf, sizeof(buf)))
+                                    {
+                                    s = buf;
+                                    msChanged = true;
+                                    }
                                 }
                             }
                         val = s;
@@ -837,11 +853,40 @@ void UIManager::loadModelSettings()
 {
     try
         {
-        std::ifstream in(MODEL_SETTINGS_FILE);
-        if (in.is_open())
+        if (std::filesystem::exists(MODEL_SETTINGS_FILE))
             {
-            in >> modelSettings_;
-            modelSettingsLoaded_ = true;
+            std::ifstream in(MODEL_SETTINGS_FILE);
+            if (in.is_open())
+                {
+                in >> modelSettings_;
+                modelSettingsLoaded_ = true;
+                }
+            }
+        else
+            {
+            // Initialize defaults using printer definition
+            std::ifstream printer(A1MINI_PRINTER_SETTINGS_FILE);
+            if (printer.is_open())
+                {
+                json pj; printer >> pj;
+                auto &po = pj["overrides"];
+                modelSettings_["overrides"]["mesh_position_x"] = { {"value", 0}, {"default_value", 0} };
+                modelSettings_["overrides"]["mesh_position_y"] = { {"value", 0}, {"default_value", 0} };
+                modelSettings_["overrides"]["support_enable"] = { {"value", true}, {"default_value", true} };
+                modelSettings_["overrides"]["center_object"] = { {"value", false}, {"default_value", false} };
+                if (po.contains("machine_start_gcode"))
+                    {
+                    std::string sg = po["machine_start_gcode"]["default_value"].get<std::string>();
+                    modelSettings_["overrides"]["machine_start_gcode"] = { {"value", sg}, {"default_value", sg} };
+                    }
+                if (po.contains("machine_end_gcode"))
+                    {
+                    std::string eg = po["machine_end_gcode"]["default_value"].get<std::string>();
+                    modelSettings_["overrides"]["machine_end_gcode"] = { {"value", eg}, {"default_value", eg} };
+                    }
+                modelSettingsLoaded_ = true;
+                saveModelSettings();
+                }
             }
         // Load enum options from primitive printer settings for dropdowns
         std::ifstream printerIn(PRIMITIVE_PRINTER_SETTINGS_FILE);
